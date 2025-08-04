@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <!-- Modern building/bridge monitoring illustration -->
+  <style>
+    .primary { fill: #4361ee; }
+    .secondary { fill: #4cc9f0; }
+    .accent { fill: #3f37c9; }
+  </style>
+  <!-- Add your SVG paths here or use an illustration from undraw.co -->
+</svg>
