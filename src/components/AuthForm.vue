@@ -105,7 +105,7 @@ function socialLogin(provider) {
         <input type="checkbox" v-model="rememberMe">
         <span>Remember me</span>
       </label>
-      <a href="#" class="forgot-password">Forgot password?</a>
+      <a href="#" class="forgot-password">Forgot?</a>
     </div>
 
     <button type="submit" class="btn-submit" :disabled="isLoading">
@@ -114,7 +114,7 @@ function socialLogin(provider) {
     </button>
 
     <div class="divider">
-      <span>or continue with</span>
+      <span>or</span>
     </div>
 
     <div class="social-logins">
@@ -147,7 +147,7 @@ function socialLogin(provider) {
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem; /* Reduced from 1.5rem */
   width: 100%;
 }
 
@@ -161,7 +161,7 @@ function socialLogin(provider) {
 
 .input-icon-wrapper i {
   position: absolute;
-  left: 1rem;
+  left: 0.8rem; /* Reduced from 1rem */
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-secondary);
@@ -171,25 +171,25 @@ function socialLogin(provider) {
 
 .form-input {
   width: 100%;
-  padding: 0.9rem 2.5rem 0.9rem 2.75rem;
-  font-size: 1rem;
-  border: 2px solid var(--border-color);
-  border-radius: 12px;
+  padding: 0.75rem 1rem 0.75rem 2.3rem; /* Reduced padding */
+  font-size: 0.9rem; /* Reduced from 1rem */
+  border: 1px solid var(--border-color); /* Reduced from 2px */
+  border-radius: 8px; /* Reduced from 12px */
   transition: all 0.3s ease;
   background-color: white;
-  height: 48px;
+  height: 42px; /* Reduced from 48px */
   box-sizing: border-box;
 }
 
 .form-input:focus {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.1);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1); /* Reduced from 4px */
   outline: none;
 }
 
 .form-input:focus + .form-label,
 .form-input:not(:placeholder-shown) + .form-label {
-  transform: translateY(-2.25rem) translateX(-0.75rem) scale(0.8);
+  transform: translateY(-1.9rem) translateX(-0.75rem) scale(0.8);
   color: var(--primary-color);
   background: white;
   padding: 0 0.5rem;
@@ -201,9 +201,9 @@ function socialLogin(provider) {
 
 .form-label {
   position: absolute;
-  left: 2.75rem;
-  top: 1rem;
-  font-size: 1rem;
+  left: 2.3rem; /* Adjusted based on reduced padding */
+  top: 0.8rem; /* Adjusted for smaller input */
+  font-size: 0.9rem; /* Reduced from 1rem */
   color: var(--text-secondary);
   transition: all 0.3s ease;
   pointer-events: none;
@@ -214,15 +214,15 @@ function socialLogin(provider) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.9rem;
-  margin: 0.5rem 0;
+  font-size: 0.8rem; /* Reduced from 0.9rem */
+  margin: 0.3rem 0;
   width: 100%;
 }
 
 .remember-me {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem; /* Reduced from 0.5rem */
   cursor: pointer;
   color: var(--text-secondary);
   user-select: none;
@@ -231,8 +231,8 @@ function socialLogin(provider) {
 .remember-me input {
   accent-color: var(--primary-color);
   margin: 0;
-  height: 16px;
-  width: 16px;
+  height: 14px; /* Reduced from 16px */
+  width: 14px; /* Reduced from 16px */
 }
 
 .forgot-password {
@@ -243,37 +243,27 @@ function socialLogin(provider) {
   margin-left: auto;
 }
 
-.forgot-password:hover {
-  color: var(--secondary-color);
-  text-decoration: underline;
-}
-
 .btn-submit {
   width: 100%;
-  padding: 1rem;
-  border-radius: 12px;
+  padding: 0.8rem; /* Reduced from 1rem */
+  border-radius: 8px; /* Reduced from 12px */
   border: none;
   background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
   color: white;
   font-weight: 600;
-  font-size: 1.1rem;
+  font-size: 0.95rem; /* Reduced from 1.1rem */
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-  margin: 0.5rem 0;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.15); /* Reduced shadow */
+  margin: 0.3rem 0;
   position: relative;
-}
-
-.btn-submit:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
 }
 
 .loading-spinner {
   display: inline-block;
-  width: 20px;
-  height: 20px;
-  border: 3px solid rgba(255, 255, 255, 0.3);
+  width: 16px; /* Reduced from 20px */
+  height: 16px; /* Reduced from 20px */
+  border: 2px solid rgba(255, 255, 255, 0.3); /* Reduced from 3px */
   border-radius: 50%;
   border-top-color: white;
   animation: spin 1s infinite linear;
@@ -283,25 +273,21 @@ function socialLogin(provider) {
 .error-message {
   background-color: rgba(239, 68, 68, 0.1);
   color: var(--danger-color);
-  padding: 0.75rem;
-  border-radius: 8px;
+  padding: 0.6rem; /* Reduced from 0.75rem */
+  border-radius: 6px; /* Reduced from 8px */
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  margin-bottom: 1rem;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
+  gap: 0.4rem; /* Reduced from 0.5rem */
+  font-size: 0.8rem; /* Reduced from 0.9rem */
+  margin-bottom: 0.8rem; /* Reduced from 1rem */
 }
 
 .divider {
   display: flex;
   align-items: center;
   color: var(--text-secondary);
-  font-size: 0.9rem;
-  margin: 1rem 0;
+  font-size: 0.8rem; /* Reduced from 0.9rem */
+  margin: 0.8rem 0; /* Reduced from 1rem */
   width: 100%;
   text-align: center;
 }
@@ -315,37 +301,31 @@ function socialLogin(provider) {
 }
 
 .divider span {
-  padding: 0 1.5rem;
+  padding: 0 1rem; /* Reduced from 1.5rem */
   white-space: nowrap;
 }
 
 .social-logins {
   display: flex;
   justify-content: center;
-  gap: 1.5rem;
+  gap: 1rem; /* Reduced from 1.5rem */
   width: 100%;
-  margin: 0.5rem 0;
+  margin: 0.3rem 0; /* Reduced from 0.5rem */
 }
 
 .btn-social {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 38px; /* Reduced from 48px */
+  height: 38px; /* Reduced from 48px */
+  border-radius: 8px; /* Reduced from 12px */
   border: 1px solid var(--border-color);
   background: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
+  font-size: 1rem; /* Reduced from 1.25rem */
   cursor: pointer;
   transition: all 0.3s ease;
   padding: 0;
-}
-
-.btn-social:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border-color: var(--primary-color);
 }
 
 .google {
@@ -360,32 +340,14 @@ function socialLogin(provider) {
   color: #555;
 }
 
-@media (max-width: 768px) {
-  .form-options {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 1rem;
-    justify-content: space-between;
-  }
-  
-  .forgot-password {
-    margin-left: 0;
-  }
-  
-  .social-logins {
-    gap: 1rem;
-  }
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
-@media (max-width: 480px) {
+/* Adjusted media queries for smaller forms */
+@media (max-width: 768px) {
   .form-options {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-  
-  .social-logins {
-    justify-content: space-around;
+    justify-content: space-between;
   }
 }
 </style>
