@@ -58,25 +58,23 @@ const testimonials = [
     text: "This monitoring system has revolutionized how we maintain our infrastructure. The predictive analytics are incredibly accurate.",
     author: "Sarah Chen",
     position: "Chief Engineer, MetroTech",
-    image: "/avatars/sarah.jpg"
+    image: "src/assets/sarah.png"
   },
   {
     text: "The real-time alerts and intuitive dashboard have helped us prevent several critical failures. Absolutely worth the investment.",
     author: "Michael Rodriguez",
     position: "Infrastructure Manager, BuildCorp",
-    image: "/avatars/michael.jpg"
+    image: "src/assets/mich.png"
   },
   {
     text: "Outstanding system reliability and the support team is always there when we need them. Highly recommended!",
     author: "Emily Watson",
     position: "Operations Director, CityBridge",
-    image: "/avatars/emily.jpg"
+    image: "src/assets/emily.png"
   }
 ];
 
 const isLoadingTestimonials = ref(true);
-const newsletterEmail = ref('');
-const subscriptionStatus = ref('');
 
 // Simulate testimonials loading
 onMounted(() => {
@@ -98,6 +96,11 @@ onMounted(() => {
   });
 });
 
+// Add back newsletter-related variables
+const newsletterEmail = ref('');
+const subscriptionStatus = ref('');
+
+// Add back newsletter submit handler
 const handleNewsletterSubmit = async () => {
   try {
     subscriptionStatus.value = 'Subscribing...';
@@ -119,15 +122,14 @@ const handleNewsletterSubmit = async () => {
           <h1 class="animate-slide-down">
             StructureMonitor
           </h1>
-          <p class="animate-fade-in">
-            Protect your infrastructure with cutting-edge IoT sensors and AI-powered analytics. 
-            Get real-time insights and predictive maintenance recommendations.
+          <p class="animate-fade-in reduced-margin">
+            An intelligent monitoring system that detects structural anomalies in real-time, ensuring safety and preventing potential deformations.
           </p>
-          <div class="cta-buttons">
+          <div class="cta-buttons compact-margin">
             <router-link to="/login" class="btn btn-primary">Login to Dashboard</router-link>
           </div>
           
-          <div class="stats-preview">
+          <div class="stats-preview compact-margin">
             <div v-for="(stat, index) in stats" :key="index" class="stat">
               <h4>{{ stat.value }}</h4>
               <p>{{ stat.label }}</p>
@@ -172,10 +174,10 @@ const handleNewsletterSubmit = async () => {
         </div>
       </div>
 
-      <div class="features">
+      <div class="features compact-top">
         <div v-for="(feature, index) in features" :key="index" class="feature-card">
           <i :class="feature.icon"></i>
-          <h3>{{ feature.title }}</h3>
+          <h3 class="reduced-margin-heading">{{ feature.title }}</h3>
           <p>{{ feature.desc }}</p>
         </div>
       </div>
@@ -209,7 +211,7 @@ const handleNewsletterSubmit = async () => {
         </div>
       </div>
 
-      <!-- Newsletter Section -->
+      <!-- Add back Newsletter Section with compact spacing -->
       <div class="newsletter-section">
         <h2>Stay Updated</h2>
         <p>Subscribe to our newsletter for the latest structural monitoring insights.</p>
@@ -243,8 +245,8 @@ const handleNewsletterSubmit = async () => {
 .hero {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 4rem;
-  padding: 6rem 0 4rem; /* reduced padding */
+  gap: 2rem; /* reduced from 4rem */
+  padding: 4rem 0 2rem; /* reduced padding */
   align-items: center;
 }
 
@@ -252,26 +254,31 @@ const handleNewsletterSubmit = async () => {
   max-width: 600px;
 }
 
+.hero-content h1 {
+  margin-bottom: 0.5rem;
+  line-height: 1.1;
+}
+
 .stats-preview {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 2rem;
-  margin-top: 3rem;
+  gap: 1rem; /* reduced from 2rem */
+  margin-top: 1.5rem; /* reduced from 3rem */
   text-align: center;
 }
 
 .features {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 3rem;
-  padding: 4rem 0; /* reduced padding */
-  margin: 2rem auto; /* added margin */
+  gap: 1.5rem;
+  padding: 1.5rem 0 0.5rem; /* reduced bottom padding */
+  margin: 0 auto; /* removed margin */
 }
 
 .feature-card {
   background: white;
   border: 1px solid var(--border-color);
-  padding: 2.5rem;
+  padding: 1.25rem; /* reduced from 1.5rem */
   border-radius: 16px;
   text-align: center;
   box-shadow: var(--box-shadow);
@@ -287,7 +294,7 @@ const handleNewsletterSubmit = async () => {
 .feature-card i {
   font-size: 2rem;
   color: var(--primary-color);
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem; /* reduced from 1rem */
 }
 
 .hero-visual {
@@ -415,14 +422,14 @@ const handleNewsletterSubmit = async () => {
 }
 
 .testimonials {
-  padding: 4rem 0; /* reduced padding */
-  margin: 2rem 0; /* added margin */
+  padding: 0.5rem 0 2rem; /* reduced top padding */
+  margin: 0; /* removed margin completely */
 }
 
 .testimonials h2 {
   text-align: center;
-  font-size: 2.5rem;
-  margin-bottom: 3rem;
+  font-size: 2.2rem; /* slightly reduced size */
+  margin-bottom: 1rem; /* reduced from 1.5rem */
   background: linear-gradient(to right, var(--text-primary), var(--primary-color));
   -webkit-background-clip: text;
   background-clip: text;
@@ -432,8 +439,8 @@ const handleNewsletterSubmit = async () => {
 .testimonials-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 3rem;
-  margin-top: 4rem;
+  gap: 2rem; /* reduced from 3rem */
+  margin-top: 1.5rem; /* reduced from 2rem */
 }
 
 .testimonial-card {
@@ -550,29 +557,35 @@ const handleNewsletterSubmit = async () => {
   100% { background-position: -200% 0; }
 }
 
-/* Newsletter section styles */
+/* Newsletter section styles restored with compact spacing */
 .newsletter-section {
   background: white;
   border-radius: 24px;
   box-shadow: var(--box-shadow);
-  padding: 4rem 2rem;
-  margin: 4rem auto;
+  padding: 2rem 1.5rem; /* reduced from 4rem 2rem */
+  margin: 1rem auto 2rem; /* reduced from 4rem auto */
   max-width: 800px;
+}
+
+.newsletter-section h2 {
+  font-size: 2.2rem;
+  margin-bottom: 0.75rem; /* reduced spacing */
 }
 
 .newsletter-form {
   display: flex;
   gap: 1rem;
   max-width: 500px;
-  margin: 2rem auto;
+  margin: 1rem auto; /* reduced from 2rem */
 }
 
 .newsletter-form input {
-  padding: 1rem 1.5rem;
+  padding: 0.75rem 1.25rem; /* reduced padding */
   border: 2px solid var(--border-color);
   border-radius: 8px;
   font-size: 1rem;
   transition: var(--transition);
+  width: 100%;
 }
 
 .newsletter-form input:focus {
@@ -582,7 +595,7 @@ const handleNewsletterSubmit = async () => {
 }
 
 .subscription-status {
-  margin-top: 1rem;
+  margin-top: 0.75rem; /* reduced from 1rem */
   font-size: 0.9rem;
   color: var(--primary-color);
 }
@@ -601,14 +614,23 @@ const handleNewsletterSubmit = async () => {
   }
 
   .hero {
-    padding: 3rem 0; /* reduced padding for mobile */
+    padding: 2rem 0 1rem; /* further reduced padding for mobile */
+    gap: 1rem;
   }
-
-  .features,
-  .testimonials,
-  .newsletter-section {
-    padding: 3rem 0; /* consistent padding for mobile */
-    margin: 1rem 0; /* reduced margin for mobile */
+  
+  .stats-preview {
+    margin-top: 1rem;
+    gap: 0.5rem;
+  }
+  
+  .features {
+    padding: 1rem 0 0.25rem; /* reduced bottom padding further for mobile */
+    margin: 0; /* removed margin */
+  }
+  
+  .testimonials {
+    padding: 0.25rem 0 1.5rem; /* reduced padding further for mobile */
+    margin: 0; /* removed margin completely */
   }
   
   .features,
@@ -622,9 +644,14 @@ const handleNewsletterSubmit = async () => {
     margin: 0 auto;
   }
 
+  .newsletter-section {
+    padding: 1.5rem 1rem; /* further reduced for mobile */
+    margin: 0.5rem 1rem 1.5rem; /* reduced margins for mobile */
+  }
+  
   .newsletter-form {
     flex-direction: column;
-    padding: 0 1rem;
+    gap: 0.75rem;
   }
 
   .cta-buttons {

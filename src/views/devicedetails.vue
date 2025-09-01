@@ -2,6 +2,8 @@
 import { ref, onMounted, computed, nextTick, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import Chart from 'chart.js/auto';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 
 const route = useRoute();
 const router = useRouter();
@@ -11,43 +13,64 @@ const isLoading = ref(true);
 const timeRange = ref('24h');
 const realtimeMode = ref(false);
 const charts = ref({
-  vibration: null,
-  pressure: null,
-  inclination: null
+  rms: null,
+  fsr_pressure_Pa: null,
+  pitch: null,
+  activeTab: 'all'
 });
 const realtimeUpdateInterval = ref(null);
+const map = ref(null);
 
-// Monitoring data - this would come from API in real app
-const monitoringData = {
-  vibration: {
-    '24h': generateTimeSeriesData(24, 0.2, 0.8),
-    '7d': generateTimeSeriesData(7, 0.2, 0.8, 'days'),
-    '30d': generateTimeSeriesData(30, 0.2, 0.8, 'days'),
-    'realtime': generateTimeSeriesData(20, 0.2, 0.8, 'minutes')
+// API Base URL
+const API_BASE_URL = 'https://structure-monitor-server-xpyz.onrender.com';
+
+// Monitoring data - will be populated from API
+const monitoringData = ref({
+  rms: {
+    '24h': [],
+    '7d': [],
+    '30d': [],
+    'realtime': []
   },
-  pressure: {
-    '24h': generateTimeSeriesData(24, 95, 100),
-    '7d': generateTimeSeriesData(7, 95, 100, 'days'),
-    '30d': generateTimeSeriesData(30, 95, 100, 'days'),
-    'realtime': generateTimeSeriesData(20, 95, 100, 'minutes')
+  fsr_pressure_Pa: {
+    '24h': [],
+    '7d': [],
+    '30d': [],
+    'realtime': []
   },
-  inclination: {
-    '24h': generateTimeSeriesData(24, 0, 1),
-    '7d': generateTimeSeriesData(7, 0, 1, 'days'),
-    '30d': generateTimeSeriesData(30, 0, 1, 'days'),
-    'realtime': generateTimeSeriesData(20, 0, 1, 'minutes')
+  pitch: {
+    '24h': [],
+    '7d': [],
+    '30d': [],
+    'realtime': []
   }
-};
+});
 
 // Live readings with reactive data
 const liveReadings = ref({
-  vibration: 0.5,
-  pressure: 98.2,
-  inclination: 0.3,
+  pitch: 0,
+  roll: 0,
+  rms: 0,
+  peak: 0,
+  crest_factor: 0,
+  f_dom: 0,
+  temp: 0,
+  sw18010p: 0,
+  fsr_adc: 0,
+  fsr_force_N: 0,
+  fsr_pressure_Pa: 0,
   status: {
-    vibration: 'normal',
-    pressure: 'normal',
-    inclination: 'normal'
+    pitch: 'normal',
+    roll: 'normal',
+    rms: 'normal',
+    peak: 'normal',
+    crest_factor: 'normal',
+    f_dom: 'normal',
+    temp: 'normal',
+    sw18010p: 'normal',
+    fsr_adc: 'normal',
+    fsr_force_N: 'normal',
+    fsr_pressure_Pa: 'normal'
   }
 });
 
@@ -56,27 +79,32 @@ const mockDevices = [
   { 
     id: 1, 
     name: 'Anna Nagar Bridge Sensor', 
-    type: 'Vibration Sensor',
+    type: 'Multi-Sensor',
     location: 'Anna Nagar Bridge',
     status: 'active',
-    model: 'SM-VS2000',
-    serialNumber: 'VS2000-12345',
+    model: 'SM-MULTI2000',
+    serialNumber: 'MULTI2000-12345',
     installDate: '2023-01-15',
     lastMaintenance: '2023-06-20',
     firmware: 'v2.1.4',
     lat: 13.0827, 
-    lng: 80.2707, 
-    vibration: 0.5, 
-    pressure: 98.2, 
-    inclination: 0.3,
+    lng: 80.2707,
     batteryLevel: 89,
     signalStrength: 95,
     thresholds: {
-      vibration: { min: 0.1, max: 0.9, warning: 0.7 },
-      pressure: { min: 95, max: 101, warning: 100 },
-      inclination: { min: 0, max: 1.2, warning: 0.8 }
+      pitch: { min: 0, max: 1.2, warning: 0.8 },
+      roll: { min: 0, max: 1.2, warning: 0.8 },
+      rms: { min: 0.1, max: 0.9, warning: 0.7 },
+      peak: { min: 0.1, max: 1.0, warning: 0.8 },
+      crest_factor: { min: 1.0, max: 2.0, warning: 1.5 },
+      f_dom: { min: 40, max: 60, warning: 55 },
+      temp: { min: 20, max: 30, warning: 28 },
+      sw18010p: { min: 0.5, max: 1.0, warning: 0.9 },
+      fsr_adc: { min: 400, max: 600, warning: 550 },
+      fsr_force_N: { min: 5, max: 15, warning: 12 },
+      fsr_pressure_Pa: { min: 95, max: 101, warning: 100 }
     },
-    lastUpdated: '2023-07-20T10:30:00'
+    lastUpdated: new Date().toISOString()
   },
   { 
     id: 2, 
@@ -91,9 +119,6 @@ const mockDevices = [
     firmware: 'v1.8.2',
     lat: 51.51, 
     lng: -0.1, 
-    vibration: 0.3, 
-    pressure: 99.1, 
-    inclination: 0.1,
     batteryLevel: 45,
     signalStrength: 78,
     lastUpdated: '2023-07-20T11:15:00'
@@ -111,9 +136,6 @@ const mockDevices = [
     firmware: 'v1.4.6',
     lat: 51.509, 
     lng: -0.11, 
-    vibration: 0.2, 
-    pressure: 97.5, 
-    inclination: 0.5,
     batteryLevel: 12,
     signalStrength: 32,
     lastUpdated: '2023-07-19T09:45:00'
@@ -131,38 +153,85 @@ const mockDevices = [
     firmware: 'v2.1.4',
     lat: 51.515, 
     lng: -0.08, 
-    vibration: 0.6, 
-    pressure: 96.8, 
-    inclination: 0.2,
     batteryLevel: 76,
     signalStrength: 89,
     lastUpdated: '2023-07-20T12:05:00'
   },
 ];
 
-// Helper function to generate time series data
-function generateTimeSeriesData(count, min, max, unit = 'hours') {
-  const data = [];
-  const now = new Date();
-  
-  for (let i = count - 1; i >= 0; i--) {
-    const date = new Date(now);
-    if (unit === 'hours') {
-      date.setHours(date.getHours() - i);
-    } else if (unit === 'days') {
-      date.setDate(date.getDate() - i);
-    } else if (unit === 'minutes') {
-      date.setMinutes(date.getMinutes() - i);
-    }
+// API Functions
+async function fetchSensorData(limit = 100) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/sensor-data?limit=${limit}`);
+    const result = await response.json();
     
-    const value = min + Math.random() * (max - min);
-    data.push({
-      time: date.toISOString(),
-      value: parseFloat(value.toFixed(2))
-    });
+    if (result.success && result.data) {
+      return result.data;
+    } else {
+      throw new Error('Failed to fetch sensor data');
+    }
+  } catch (error) {
+    console.error('Error fetching sensor data:', error);
+    return [];
+  }
+}
+
+async function fetchLatestSensorData() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/sensor-data/latest`);
+    const result = await response.json();
+    
+    if (result.success && result.data) {
+      return result.data;
+    } else {
+      throw new Error('No latest data available');
+    }
+  } catch (error) {
+    console.error('Error fetching latest sensor data:', error);
+    return null;
+  }
+}
+
+// Process API data for time series
+function processApiDataForTimeRange(apiData, range) {
+  if (!apiData || apiData.length === 0) return [];
+  
+  const now = new Date();
+  let cutoffDate;
+  
+  switch (range) {
+    case '24h':
+      cutoffDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      break;
+    case '7d':
+      cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      break;
+    case '30d':
+      cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      break;
+    case 'realtime':
+      cutoffDate = new Date(now.getTime() - 20 * 60 * 1000); // Last 20 minutes
+      break;
+    default:
+      cutoffDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   }
   
-  return data;
+  // Filter data based on timestamp
+  const filteredData = apiData.filter(item => {
+    const itemDate = new Date(item.timestamp);
+    return itemDate >= cutoffDate;
+  });
+  
+  // Sort by timestamp (oldest first)
+  return filteredData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+}
+
+// Convert API data to chart format
+function convertApiDataToChartFormat(apiData, field) {
+  return apiData.map(item => ({
+    time: item.timestamp,
+    value: parseFloat(item[field]) || 0
+  }));
 }
 
 // Format time label based on time range
@@ -180,21 +249,6 @@ function formatTimeLabel(timeString, range) {
   return timeString;
 }
 
-// Generate a new data point within a reasonable range of the last value
-function generateNewDataPoint(lastValue, min, max, variability = 0.2) {
-  // Calculate range for the new value to stay within bounds
-  const range = (max - min) * variability;
-  
-  // Calculate random change within the variability range
-  const change = (Math.random() * range * 2) - range;
-  
-  // Calculate new value and ensure it stays within bounds
-  let newValue = lastValue + change;
-  newValue = Math.max(min, Math.min(max, newValue));
-  
-  return parseFloat(newValue.toFixed(2));
-}
-
 // Check if value exceeds warning threshold
 function checkStatus(value, type) {
   if (!device.value || !device.value.thresholds) return 'normal';
@@ -207,51 +261,100 @@ function checkStatus(value, type) {
   return 'normal';
 }
 
-// Add a new data point to realtime series
-function addRealtimeDataPoint() {
-  const now = new Date();
-  
-  // Update vibration data
-  const lastVibration = monitoringData.vibration.realtime[monitoringData.vibration.realtime.length - 1].value;
-  const newVibration = generateNewDataPoint(lastVibration, 0.2, 0.8);
-  monitoringData.vibration.realtime.shift();
-  monitoringData.vibration.realtime.push({ time: now.toISOString(), value: newVibration });
-  
-  // Update pressure data
-  const lastPressure = monitoringData.pressure.realtime[monitoringData.pressure.realtime.length - 1].value;
-  const newPressure = generateNewDataPoint(lastPressure, 95, 100);
-  monitoringData.pressure.realtime.shift();
-  monitoringData.pressure.realtime.push({ time: now.toISOString(), value: newPressure });
-  
-  // Update inclination data
-  const lastInclination = monitoringData.inclination.realtime[monitoringData.inclination.realtime.length - 1].value;
-  const newInclination = generateNewDataPoint(lastInclination, 0, 1);
-  monitoringData.inclination.realtime.shift();
-  monitoringData.inclination.realtime.push({ time: now.toISOString(), value: newInclination });
-  
-  // Update live readings
-  liveReadings.value = {
-    vibration: newVibration,
-    pressure: newPressure,
-    inclination: newInclination,
-    status: {
-      vibration: checkStatus(newVibration, 'vibration'),
-      pressure: checkStatus(newPressure, 'pressure'),
-      inclination: checkStatus(newInclination, 'inclination')
-    }
-  };
-  
-  // Update charts if in realtime mode
-  if (realtimeMode.value && charts.value.vibration) {
-    updateCharts('realtime');
+// Load monitoring data from API
+async function loadMonitoringData() {
+  try {
+    const apiData = await fetchSensorData(1000); // Fetch more data for different time ranges
+    
+    // Process data for different time ranges
+    const ranges = ['24h', '7d', '30d', 'realtime'];
+    
+    ranges.forEach(range => {
+      const rangeData = processApiDataForTimeRange(apiData, range);
+      
+      monitoringData.value.rms[range] = convertApiDataToChartFormat(rangeData, 'rms');
+      monitoringData.value.fsr_pressure_Pa[range] = convertApiDataToChartFormat(rangeData, 'fsr_pressure_Pa');
+      monitoringData.value.pitch[range] = convertApiDataToChartFormat(rangeData, 'pitch');
+    });
+    
+  } catch (error) {
+    console.error('Error loading monitoring data:', error);
   }
+}
+
+// Update live readings from API
+async function updateLiveReadings() {
+  try {
+    const latestData = await fetchLatestSensorData();
+    
+    if (latestData) {
+      liveReadings.value = {
+        pitch: parseFloat(latestData.pitch) || 0,
+        roll: parseFloat(latestData.roll) || 0,
+        rms: parseFloat(latestData.rms) || 0,
+        peak: parseFloat(latestData.peak) || 0,
+        crest_factor: parseFloat(latestData.crest_factor) || 0,
+        f_dom: parseFloat(latestData.f_dom) || 0,
+        temp: parseFloat(latestData.temp) || 0,
+        sw18010p: parseFloat(latestData.sw18010p) || 0,
+        fsr_adc: parseFloat(latestData.fsr_adc) || 0,
+        fsr_force_N: parseFloat(latestData.fsr_force_N) || 0,
+        fsr_pressure_Pa: parseFloat(latestData.fsr_pressure_Pa) || 0,
+        status: {
+          pitch: checkStatus(latestData.pitch, 'pitch'),
+          roll: checkStatus(latestData.roll, 'roll'),
+          rms: checkStatus(latestData.rms, 'rms'),
+          peak: checkStatus(latestData.peak, 'peak'),
+          crest_factor: checkStatus(latestData.crest_factor, 'crest_factor'),
+          f_dom: checkStatus(latestData.f_dom, 'f_dom'),
+          temp: checkStatus(latestData.temp, 'temp'),
+          sw18010p: checkStatus(latestData.sw18010p, 'sw18010p'),
+          fsr_adc: checkStatus(latestData.fsr_adc, 'fsr_adc'),
+          fsr_force_N: checkStatus(latestData.fsr_force_N, 'fsr_force_N'),
+          fsr_pressure_Pa: checkStatus(latestData.fsr_pressure_Pa, 'fsr_pressure_Pa')
+        }
+      };
+      
+      // Update device last updated time
+      if (device.value) {
+        device.value.lastUpdated = latestData.timestamp;
+      }
+    }
+  } catch (error) {
+    console.error('Error updating live readings:', error);
+  }
+}
+
+// Initialize map with device location
+function initMap() {
+  // If map container is not rendered yet, skip
+  const mapContainer = document.getElementById('location-map');
+  if (!mapContainer || !device.value) return;
+  
+  // Create map instance
+  map.value = L.map('location-map').setView([device.value.lat, device.value.lng], 13);
+  
+  // Add tile layer (OpenStreetMap)
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 18
+  }).addTo(map.value);
+  
+  // Add marker for device location
+  const deviceMarker = L.marker([device.value.lat, device.value.lng]).addTo(map.value);
+  
+  // Add popup with device info
+  deviceMarker.bindPopup(`
+    <strong>${device.value.name}</strong><br>
+    ${device.value.location}<br>
+    <span class="${getStatusClass(device.value.status)}">${device.value.status}</span>
+  `).openPopup();
 }
 
 // Load device data
 onMounted(async () => {
   try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    isLoading.value = true;
     
     // Find device by ID
     const foundDevice = mockDevices.find(d => d.id === deviceId.value);
@@ -262,16 +365,36 @@ onMounted(async () => {
     }
     
     device.value = foundDevice;
+    
+    // Load monitoring data from API
+    await loadMonitoringData();
+    
+    // Update live readings
+    await updateLiveReadings();
+    
     isLoading.value = false;
     
-    // Initialize charts after device data is loaded
+    // Initialize charts and map after device data is loaded
     nextTick(() => {
       initCharts();
+      initMap();
       
-      // Start generating real-time data for live readings
-      setInterval(() => {
-        addRealtimeDataPoint();
-      }, 2000);
+      // Start real-time updates every 5 seconds
+      realtimeUpdateInterval.value = setInterval(async () => {
+        await updateLiveReadings();
+        
+        if (realtimeMode.value) {
+          // Reload realtime data and update charts
+          const realtimeApiData = await fetchSensorData(20);
+          const realtimeData = processApiDataForTimeRange(realtimeApiData, 'realtime');
+          
+          monitoringData.value.rms.realtime = convertApiDataToChartFormat(realtimeData, 'rms');
+          monitoringData.value.fsr_pressure_Pa.realtime = convertApiDataToChartFormat(realtimeData, 'fsr_pressure_Pa');
+          monitoringData.value.pitch.realtime = convertApiDataToChartFormat(realtimeData, 'pitch');
+          
+          updateCharts('realtime');
+        }
+      }, 5000);
     });
   } catch (error) {
     console.error('Failed to load device data:', error);
@@ -317,15 +440,15 @@ function initCharts() {
     }
   };
 
-  // Vibration Chart
-  const vibrationData = monitoringData.vibration[timeRange.value];
-  charts.value.vibration = new Chart(document.getElementById('vibrationChart'), {
+  // RMS Chart
+  const rmsData = monitoringData.value.rms[timeRange.value];
+  charts.value.rms = new Chart(document.getElementById('rmsChart'), {
     type: 'line',
     data: {
-      labels: vibrationData.map(d => formatTimeLabel(d.time, timeRange.value)),
+      labels: rmsData.map(d => formatTimeLabel(d.time, timeRange.value)),
       datasets: [{
-        label: 'Vibration (Hz)',
-        data: vibrationData.map(d => d.value),
+        label: 'RMS',
+        data: rmsData.map(d => d.value),
         borderColor: '#4361ee',
         backgroundColor: 'rgba(67, 97, 238, 0.1)',
         fill: true,
@@ -337,15 +460,15 @@ function initCharts() {
     options
   });
   
-  // Pressure Chart
-  const pressureData = monitoringData.pressure[timeRange.value];
-  charts.value.pressure = new Chart(document.getElementById('pressureChart'), {
+  // FSR Pressure Chart
+  const fsrPressureData = monitoringData.value.fsr_pressure_Pa[timeRange.value];
+  charts.value.fsr_pressure_Pa = new Chart(document.getElementById('fsrPressureChart'), {
     type: 'line',
     data: {
-      labels: pressureData.map(d => formatTimeLabel(d.time, timeRange.value)),
+      labels: fsrPressureData.map(d => formatTimeLabel(d.time, timeRange.value)),
       datasets: [{
-        label: 'Pressure (kPa)',
-        data: pressureData.map(d => d.value),
+        label: 'FSR Pressure (Pa)',
+        data: fsrPressureData.map(d => d.value),
         borderColor: '#4cc9f0',
         backgroundColor: 'rgba(76, 201, 240, 0.1)',
         fill: true,
@@ -357,15 +480,15 @@ function initCharts() {
     options
   });
   
-  // Inclination Chart
-  const inclinationData = monitoringData.inclination[timeRange.value];
-  charts.value.inclination = new Chart(document.getElementById('inclinationChart'), {
+  // Pitch Chart
+  const pitchData = monitoringData.value.pitch[timeRange.value];
+  charts.value.pitch = new Chart(document.getElementById('pitchChart'), {
     type: 'line',
     data: {
-      labels: inclinationData.map(d => formatTimeLabel(d.time, timeRange.value)),
+      labels: pitchData.map(d => formatTimeLabel(d.time, timeRange.value)),
       datasets: [{
-        label: 'Inclination (°)',
-        data: inclinationData.map(d => d.value),
+        label: 'Pitch (°)',
+        data: pitchData.map(d => d.value),
         borderColor: '#f72585',
         backgroundColor: 'rgba(247, 37, 133, 0.1)',
         fill: true,
@@ -380,34 +503,44 @@ function initCharts() {
 
 // Update charts when time range changes
 function updateCharts(range) {
-  if (!charts.value.vibration) return;
+  if (!charts.value.rms) return;
   
-  const vibrationData = monitoringData.vibration[range];
-  charts.value.vibration.data.labels = vibrationData.map(d => formatTimeLabel(d.time, range));
-  charts.value.vibration.data.datasets[0].data = vibrationData.map(d => d.value);
-  charts.value.vibration.update();
+  const rmsData = monitoringData.value.rms[range];
+  charts.value.rms.data.labels = rmsData.map(d => formatTimeLabel(d.time, range));
+  charts.value.rms.data.datasets[0].data = rmsData.map(d => d.value);
+  charts.value.rms.update();
   
-  const pressureData = monitoringData.pressure[range];
-  charts.value.pressure.data.labels = pressureData.map(d => formatTimeLabel(d.time, range));
-  charts.value.pressure.data.datasets[0].data = pressureData.map(d => d.value);
-  charts.value.pressure.update();
+  const fsrPressureData = monitoringData.value.fsr_pressure_Pa[range];
+  charts.value.fsr_pressure_Pa.data.labels = fsrPressureData.map(d => formatTimeLabel(d.time, range));
+  charts.value.fsr_pressure_Pa.data.datasets[0].data = fsrPressureData.map(d => d.value);
+  charts.value.fsr_pressure_Pa.update();
   
-  const inclinationData = monitoringData.inclination[range];
-  charts.value.inclination.data.labels = inclinationData.map(d => formatTimeLabel(d.time, range));
-  charts.value.inclination.data.datasets[0].data = inclinationData.map(d => d.value);
-  charts.value.inclination.update();
+  const pitchData = monitoringData.value.pitch[range];
+  charts.value.pitch.data.labels = pitchData.map(d => formatTimeLabel(d.time, range));
+  charts.value.pitch.data.datasets[0].data = pitchData.map(d => d.value);
+  charts.value.pitch.update();
 }
 
 // Update time range and update charts
-function updateTimeRange(range) {
+async function updateTimeRange(range) {
   timeRange.value = range;
   realtimeMode.value = (range === 'realtime');
   
   // Update animation duration based on mode
-  if (charts.value.vibration) {
-    charts.value.vibration.options.animation.duration = realtimeMode.value ? 0 : 1000;
-    charts.value.pressure.options.animation.duration = realtimeMode.value ? 0 : 1000;
-    charts.value.inclination.options.animation.duration = realtimeMode.value ? 0 : 1000;
+  if (charts.value.rms) {
+    charts.value.rms.options.animation.duration = realtimeMode.value ? 0 : 1000;
+    charts.value.fsr_pressure_Pa.options.animation.duration = realtimeMode.value ? 0 : 1000;
+    charts.value.pitch.options.animation.duration = realtimeMode.value ? 0 : 1000;
+  }
+  
+  // If switching to realtime mode, reload data
+  if (realtimeMode.value) {
+    const realtimeApiData = await fetchSensorData(20);
+    const realtimeData = processApiDataForTimeRange(realtimeApiData, 'realtime');
+    
+    monitoringData.value.rms.realtime = convertApiDataToChartFormat(realtimeData, 'rms');
+    monitoringData.value.fsr_pressure_Pa.realtime = convertApiDataToChartFormat(realtimeData, 'fsr_pressure_Pa');
+    monitoringData.value.pitch.realtime = convertApiDataToChartFormat(realtimeData, 'pitch');
   }
   
   updateCharts(range);
@@ -438,6 +571,12 @@ function goBack() {
 onUnmounted(() => {
   if (realtimeUpdateInterval.value) {
     clearInterval(realtimeUpdateInterval.value);
+  }
+  
+  // Clean up map instance
+  if (map.value) {
+    map.value.remove();
+    map.value = null;
   }
 });
 </script>
@@ -481,40 +620,144 @@ onUnmounted(() => {
           <h2 class="section-title">Live Readings</h2>
           <div class="live-readings">
             <div class="reading-card">
-              <div class="reading-icon vibration">
-                <i class="fas fa-wave-square"></i>
-              </div>
-              <div class="reading-details">
-                <h3>Vibration</h3>
-                <div class="reading-value">{{ liveReadings.vibration }} <span>Hz</span></div>
-                <div :class="['reading-status', getStatusClass(liveReadings.status.vibration)]">
-                  {{ liveReadings.status.vibration }}
-                </div>
-              </div>
-            </div>
-            
-            <div class="reading-card">
-              <div class="reading-icon pressure">
-                <i class="fas fa-tachometer-alt"></i>
-              </div>
-              <div class="reading-details">
-                <h3>Pressure</h3>
-                <div class="reading-value">{{ liveReadings.pressure }} <span>kPa</span></div>
-                <div :class="['reading-status', getStatusClass(liveReadings.status.pressure)]">
-                  {{ liveReadings.status.pressure }}
-                </div>
-              </div>
-            </div>
-            
-            <div class="reading-card">
-              <div class="reading-icon inclination">
+              <div class="reading-icon pitch">
                 <i class="fas fa-ruler-vertical"></i>
               </div>
               <div class="reading-details">
-                <h3>Inclination</h3>
-                <div class="reading-value">{{ liveReadings.inclination }} <span>°</span></div>
-                <div :class="['reading-status', getStatusClass(liveReadings.status.inclination)]">
-                  {{ liveReadings.status.inclination }}
+                <h3>Pitch</h3>
+                <div class="reading-value">{{ liveReadings.pitch }} <span>°</span></div>
+                <div :class="['reading-status', getStatusClass(liveReadings.status.pitch)]">
+                  {{ liveReadings.status.pitch }}
+                </div>
+              </div>
+            </div>
+            
+            <div class="reading-card">
+              <div class="reading-icon roll">
+                <i class="fas fa-ruler-vertical"></i>
+              </div>
+              <div class="reading-details">
+                <h3>Roll</h3>
+                <div class="reading-value">{{ liveReadings.roll }} <span>°</span></div>
+                <div :class="['reading-status', getStatusClass(liveReadings.status.roll)]">
+                  {{ liveReadings.status.roll }}
+                </div>
+              </div>
+            </div>
+            
+            <div class="reading-card">
+              <div class="reading-icon rms">
+                <i class="fas fa-wave-square"></i>
+              </div>
+              <div class="reading-details">
+                <h3>RMS</h3>
+                <div class="reading-value">{{ liveReadings.rms }}</div>
+                <div :class="['reading-status', getStatusClass(liveReadings.status.rms)]">
+                  {{ liveReadings.status.rms }}
+                </div>
+              </div>
+            </div>
+            
+            <div class="reading-card">
+              <div class="reading-icon peak">
+                <i class="fas fa-wave-square"></i>
+              </div>
+              <div class="reading-details">
+                <h3>Peak</h3>
+                <div class="reading-value">{{ liveReadings.peak }}</div>
+                <div :class="['reading-status', getStatusClass(liveReadings.status.peak)]">
+                  {{ liveReadings.status.peak }}
+                </div>
+              </div>
+            </div>
+            
+            <div class="reading-card">
+              <div class="reading-icon crest_factor">
+                <i class="fas fa-wave-square"></i>
+              </div>
+              <div class="reading-details">
+                <h3>Crest Factor</h3>
+                <div class="reading-value">{{ liveReadings.crest_factor }}</div>
+                <div :class="['reading-status', getStatusClass(liveReadings.status.crest_factor)]">
+                  {{ liveReadings.status.crest_factor }}
+                </div>
+              </div>
+            </div>
+            
+            <div class="reading-card">
+              <div class="reading-icon f_dom">
+                <i class="fas fa-wave-square"></i>
+              </div>
+              <div class="reading-details">
+                <h3>F Dom</h3>
+                <div class="reading-value">{{ liveReadings.f_dom }} <span>Hz</span></div>
+                <div :class="['reading-status', getStatusClass(liveReadings.status.f_dom)]">
+                  {{ liveReadings.status.f_dom }}
+                </div>
+              </div>
+            </div>
+            
+            <div class="reading-card">
+              <div class="reading-icon temp">
+                <i class="fas fa-thermometer-half"></i>
+              </div>
+              <div class="reading-details">
+                <h3>Temperature</h3>
+                <div class="reading-value">{{ liveReadings.temp }} <span>°C</span></div>
+                <div :class="['reading-status', getStatusClass(liveReadings.status.temp)]">
+                  {{ liveReadings.status.temp }}
+                </div>
+              </div>
+            </div>
+            
+            <div class="reading-card">
+              <div class="reading-icon sw18010p">
+                <i class="fas fa-microchip"></i>
+              </div>
+              <div class="reading-details">
+                <h3>SW18010P</h3>
+                <div class="reading-value">{{ liveReadings.sw18010p }}</div>
+                <div :class="['reading-status', getStatusClass(liveReadings.status.sw18010p)]">
+                  {{ liveReadings.status.sw18010p }}
+                </div>
+              </div>
+            </div>
+            
+            <div class="reading-card">
+              <div class="reading-icon fsr_adc">
+                <i class="fas fa-tachometer-alt"></i>
+              </div>
+              <div class="reading-details">
+                <h3>FSR ADC</h3>
+                <div class="reading-value">{{ liveReadings.fsr_adc }}</div>
+                <div :class="['reading-status', getStatusClass(liveReadings.status.fsr_adc)]">
+                  {{ liveReadings.status.fsr_adc }}
+                </div>
+              </div>
+            </div>
+            
+            <div class="reading-card">
+              <div class="reading-icon fsr_force_N">
+                <i class="fas fa-tachometer-alt"></i>
+              </div>
+              <div class="reading-details">
+                <h3>FSR Force (N)</h3>
+                <div class="reading-value">{{ liveReadings.fsr_force_N }} <span>N</span></div>
+                <div :class="['reading-status', getStatusClass(liveReadings.status.fsr_force_N)]">
+                  {{ liveReadings.status.fsr_force_N }}
+                </div>
+              </div>
+            </div>
+            
+            <div class="reading-card">
+              <div class="reading-icon fsr_pressure_Pa">
+                <i class="fas fa-tachometer-alt"></i>
+              </div>
+              <div class="reading-details">
+                <h3>FSR Pressure (Pa)</h3>
+                <div class="reading-value">{{ liveReadings.fsr_pressure_Pa }} <span>Pa</span></div>
+                <div :class="['reading-status', getStatusClass(liveReadings.status.fsr_pressure_Pa)]">
+                  {{ liveReadings.status.fsr_pressure_Pa }}
                 </div>
               </div>
             </div>
@@ -553,39 +796,39 @@ onUnmounted(() => {
           <div class="chart-wrapper">
             <div class="chart-tabs">
               <div class="chart-tab" :class="{ active: charts.activeTab === 'all' }" @click="charts.activeTab = 'all'">All Data</div>
-              <div class="chart-tab" :class="{ active: charts.activeTab === 'vibration' }" @click="charts.activeTab = 'vibration'">Vibration</div>
-              <div class="chart-tab" :class="{ active: charts.activeTab === 'pressure' }" @click="charts.activeTab = 'pressure'">Pressure</div>
-              <div class="chart-tab" :class="{ active: charts.activeTab === 'inclination' }" @click="charts.activeTab = 'inclination'">Inclination</div>
+              <div class="chart-tab" :class="{ active: charts.activeTab === 'rms' }" @click="charts.activeTab = 'rms'">RMS</div>
+              <div class="chart-tab" :class="{ active: charts.activeTab === 'fsr_pressure_Pa' }" @click="charts.activeTab = 'fsr_pressure_Pa'">FSR Pressure</div>
+              <div class="chart-tab" :class="{ active: charts.activeTab === 'pitch' }" @click="charts.activeTab = 'pitch'">Pitch</div>
             </div>
             
             <div class="charts-grid" :class="{ 'realtime': realtimeMode }">
-              <div class="chart-card" :class="{ 'full-width': charts.activeTab === 'vibration' || charts.activeTab === 'all' }">
+              <div class="chart-card" :class="{ 'full-width': charts.activeTab === 'rms', 'hidden': charts.activeTab !== 'rms' && charts.activeTab !== 'all' }">
                 <div class="chart-header">
-                  <h3>Vibration Over Time</h3>
+                  <h3>RMS Over Time</h3>
                   <div class="pulse-indicator" v-if="realtimeMode"></div>
                 </div>
                 <div class="chart-container">
-                  <canvas id="vibrationChart"></canvas>
+                  <canvas id="rmsChart"></canvas>
                 </div>
               </div>
               
-              <div class="chart-card" :class="{ 'full-width': charts.activeTab === 'pressure' || charts.activeTab === 'all' }">
+              <div class="chart-card" :class="{ 'full-width': charts.activeTab === 'fsr_pressure_Pa', 'hidden': charts.activeTab !== 'fsr_pressure_Pa' && charts.activeTab !== 'all' }">
                 <div class="chart-header">
-                  <h3>Pressure Over Time</h3>
+                  <h3>FSR Pressure Over Time</h3>
                   <div class="pulse-indicator" v-if="realtimeMode"></div>
                 </div>
                 <div class="chart-container">
-                  <canvas id="pressureChart"></canvas>
+                  <canvas id="fsrPressureChart"></canvas>
                 </div>
               </div>
               
-              <div class="chart-card" :class="{ 'full-width': charts.activeTab === 'inclination' || charts.activeTab === 'all' }">
+              <div class="chart-card" :class="{ 'full-width': charts.activeTab === 'pitch', 'hidden': charts.activeTab !== 'pitch' && charts.activeTab !== 'all' }">
                 <div class="chart-header">
-                  <h3>Inclination Over Time</h3>
+                  <h3>Pitch Over Time</h3>
                   <div class="pulse-indicator" v-if="realtimeMode"></div>
                 </div>
                 <div class="chart-container">
-                  <canvas id="inclinationChart"></canvas>
+                  <canvas id="pitchChart"></canvas>
                 </div>
               </div>
             </div>
@@ -596,8 +839,11 @@ onUnmounted(() => {
         <div class="section">
           <h2 class="section-title">Device Information</h2>
           <div class="device-info-grid">
-            <div class="info-group">
-              <h3>Hardware Details</h3>
+            <div class="info-group hardware-info">
+              <div class="info-group-header">
+                <i class="fas fa-microchip"></i>
+                <h3>Hardware Details</h3>
+              </div>
               <div class="info-list">
                 <div class="info-item">
                   <span class="info-label">Model</span>
@@ -611,11 +857,25 @@ onUnmounted(() => {
                   <span class="info-label">Firmware</span>
                   <span class="info-value">{{ device.firmware }}</span>
                 </div>
+                <div class="info-item">
+                  <span class="info-label">Type</span>
+                  <span class="info-value">{{ device.type }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">Status</span>
+                  <span class="info-value">
+                    <span :class="['status-indicator', getStatusClass(device.status)]"></span>
+                    {{ device.status }}
+                  </span>
+                </div>
               </div>
             </div>
             
-            <div class="info-group">
-              <h3>Installation</h3>
+            <div class="info-group installation-info">
+              <div class="info-group-header">
+                <i class="fas fa-tools"></i>
+                <h3>Installation & Maintenance</h3>
+              </div>
               <div class="info-list">
                 <div class="info-item">
                   <span class="info-label">Installation Date</span>
@@ -625,19 +885,40 @@ onUnmounted(() => {
                   <span class="info-label">Last Maintenance</span>
                   <span class="info-value">{{ device.lastMaintenance }}</span>
                 </div>
+                <div class="info-item">
+                  <span class="info-label">Last Update</span>
+                  <span class="info-value">{{ formatLastUpdated(device.lastUpdated) }}</span>
+                </div>
               </div>
             </div>
             
-            <div class="info-group">
-              <h3>Location</h3>
-              <div class="info-list">
+            <div class="info-group location-info">
+              <div class="info-group-header">
+                <i class="fas fa-map-marker-alt"></i>
+                <h3>Location Details</h3>
+              </div>
+              <!-- Map is now placed before the info list for more prominence -->
+              <div class="location-map" id="location-map"></div>
+              <div class="location-info-details">
                 <div class="info-item">
-                  <span class="info-label">Latitude</span>
-                  <span class="info-value">{{ device.lat }}</span>
+                  <span class="info-label">Location Name</span>
+                  <span class="info-value">{{ device.location }}</span>
                 </div>
-                <div class="info-item">
-                  <span class="info-label">Longitude</span>
-                  <span class="info-value">{{ device.lng }}</span>
+                <div class="coordinates">
+                  <div class="coordinate-item">
+                    <i class="fas fa-location-arrow"></i>
+                    <div>
+                      <div class="coordinate-label">Latitude</div>
+                      <div class="coordinate-value">{{ device.lat }}</div>
+                    </div>
+                  </div>
+                  <div class="coordinate-item">
+                    <i class="fas fa-location-arrow fa-flip-horizontal"></i>
+                    <div>
+                      <div class="coordinate-label">Longitude</div>
+                      <div class="coordinate-value">{{ device.lng }}</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -792,19 +1073,59 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
-.vibration {
+.pitch {
   background: rgba(67, 97, 238, 0.1);
   color: #4361ee;
 }
 
-.pressure {
+.roll {
+  background: rgba(247, 37, 133, 0.1);
+  color: #f72585;
+}
+
+.rms {
+  background: rgba(67, 97, 238, 0.1);
+  color: #4361ee;
+}
+
+.peak {
+  background: rgba(67, 97, 238, 0.1);
+  color: #4361ee;
+}
+
+.crest_factor {
+  background: rgba(67, 97, 238, 0.1);
+  color: #4361ee;
+}
+
+.f_dom {
+  background: rgba(67, 97, 238, 0.1);
+  color: #4361ee;
+}
+
+.temp {
+  background: rgba(255, 193, 7, 0.1);
+  color: #ffc107;
+}
+
+.sw18010p {
   background: rgba(76, 201, 240, 0.1);
   color: #4cc9f0;
 }
 
-.inclination {
-  background: rgba(247, 37, 133, 0.1);
-  color: #f72585;
+.fsr_adc {
+  background: rgba(76, 201, 240, 0.1);
+  color: #4cc9f0;
+}
+
+.fsr_force_N {
+  background: rgba(76, 201, 240, 0.1);
+  color: #4cc9f0;
+}
+
+.fsr_pressure_Pa {
+  background: rgba(76, 201, 240, 0.1);
+  color: #4cc9f0;
 }
 
 .reading-details {
@@ -978,8 +1299,19 @@ onUnmounted(() => {
   box-shadow: 0 0 15px rgba(247, 37, 133, 0.2);
 }
 
+.chart-card {
+  background: var(--background-dark);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
 .chart-card.full-width {
   grid-column: 1 / -1;
+}
+
+.chart-card.hidden {
+  display: none;
 }
 
 .chart-header {
@@ -987,6 +1319,12 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
+}
+
+.chart-container {
+  width: 100%;
+  height: 300px;
+  position: relative;
 }
 
 .pulse-indicator {
@@ -1021,14 +1359,48 @@ onUnmounted(() => {
 
 .device-info-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 2rem;
 }
 
+.info-group {
+  background: var(--background-dark);
+  border-radius: 12px;
+  padding: 1.5rem;
+  height: 100%;
+  transition: all 0.3s ease;
+}
+
+.info-group:hover {
+  box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+  transform: translateY(-2px);
+}
+
+.info-group-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.info-group-header i {
+  font-size: 1.25rem;
+  margin-right: 0.75rem;
+  width: 32px;
+  height: 32px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
 .info-group h3 {
-  margin-top: 0;
-  font-size: 1.1rem;
-  margin-bottom: 1rem;
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
   color: var(--text-primary);
 }
 
@@ -1042,68 +1414,110 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px dashed rgba(203, 213, 225, 0.4);
+  align-items: center;
+}
+
+.info-item:last-child {
+  border-bottom: none;
 }
 
 .info-label {
   color: var(--text-secondary);
+  font-size: 0.9rem;
 }
 
 .info-value {
   font-weight: 500;
   color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-@media (min-width: 768px) {
-  .charts-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .chart-card:nth-child(3) {
-    grid-column: span 2;
-  }
+.status-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
 }
 
-@media (min-width: 1024px) {
-  .charts-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-  
-  .chart-card:nth-child(3) {
-    grid-column: auto;
-  }
+.hardware-info .info-group-header i {
+  color: #4361ee;
+}
+
+.installation-info .info-group-header i {
+  color: #3a0ca3;
+}
+
+.location-info .info-group-header i {
+  color: #4cc9f0;
+}
+
+.thresholds-info .info-group-header i {
+  color: #f72585;
+}
+
+.location-info {
+  grid-column: span 2;
+  display: flex;
+  flex-direction: column;
+}
+
+.location-map {
+  height: 300px;
+  border-radius: 8px;
+  margin: 0.5rem 0 1.5rem;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  z-index: 1;
+  flex-grow: 1;
+}
+
+.location-info-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.coordinates {
+  display: flex;
+  gap: 2rem;
+  margin-top: 0.5rem;
+}
+
+.coordinate-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.coordinate-item i {
+  font-size: 1.25rem;
+  color: var(--primary-color);
+  width: 32px;
+  height: 32px;
+  background: rgba(67, 97, 238, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.coordinate-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.coordinate-value {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
 @media (max-width: 768px) {
-  .details-header {
+  .coordinates {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-  
-  .header-actions {
-    flex-direction: column;
-    gap: 0.75rem;
-    width: 100%;
-  }
-  
-  .header-actions .btn {
-    width: 100%;
-    justify-content: center;
-  }
-  
-  .status-card {
-    grid-column: span 1;
-  }
-  
-  .device-info {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .section-header {
-    flex-direction: column;
-    align-items: flex-start;
     gap: 1rem;
   }
 }

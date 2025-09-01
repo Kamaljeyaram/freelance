@@ -10,7 +10,32 @@ const searchQuery = ref('');
 const statusFilter = ref('all');
 const isLoading = ref(true);
 
-// Mock device data with Chennai coordinates
+// Add checkStatus function
+function checkStatus(value, parameter) {
+  // Define thresholds for different parameters
+  const thresholds = {
+    pitch: { warning: 5, critical: 10 },
+    roll: { warning: 5, critical: 10 },
+    rms: { warning: 2.0, critical: 5.0 },
+    peak: { warning: 10.0, critical: 20.0 },
+    crest_factor: { warning: 3.0, critical: 5.0 },
+    f_dom: { warning: 50, critical: 100 },
+    temp: { warning: 40, critical: 60 },
+    sw18010p: { warning: 80, critical: 90 },
+    fsr_adc: { warning: 800, critical: 900 },
+    fsr_force_N: { warning: 50, critical: 100 },
+    fsr_pressure_Pa: { warning: 1000, critical: 2000 }
+  };
+
+  const threshold = thresholds[parameter];
+  if (!threshold || value === undefined || value === null) return 'normal';
+  
+  if (value >= threshold.critical) return 'critical';
+  if (value >= threshold.warning) return 'warning';
+  return 'normal';
+}
+
+// Mock device data with Chennai coordinates and updated parameters
 const devices = ref([
   { 
     id: 1, 
@@ -24,7 +49,20 @@ const devices = ref([
     pressure: 98.2, 
     inclination: 0.3,
     batteryLevel: 89,
-    lastUpdated: '2023-07-20T10:30:00'
+    lastUpdated: '2023-07-20T10:30:00',
+    latestData: {
+      pitch: 2.1,
+      roll: 1.8,
+      rms: 1.2,
+      peak: 8.5,
+      crest_factor: 2.1,
+      f_dom: 25.3,
+      temp: 28.5,
+      sw18010p: 45.2,
+      fsr_adc: 512,
+      fsr_force_N: 15.8,
+      fsr_pressure_Pa: 450.2
+    }
   },
   { 
     id: 2, 
@@ -38,7 +76,20 @@ const devices = ref([
     pressure: 99.1, 
     inclination: 0.1,
     batteryLevel: 45,
-    lastUpdated: '2023-07-20T11:15:00'
+    lastUpdated: '2023-07-20T11:15:00',
+    latestData: {
+      pitch: 6.2,
+      roll: 4.1,
+      rms: 2.8,
+      peak: 12.1,
+      crest_factor: 3.5,
+      f_dom: 55.8,
+      temp: 42.1,
+      sw18010p: 82.3,
+      fsr_adc: 720,
+      fsr_force_N: 35.2,
+      fsr_pressure_Pa: 950.7
+    }
   },
   { 
     id: 3, 
@@ -52,7 +103,20 @@ const devices = ref([
     pressure: 97.5, 
     inclination: 0.5,
     batteryLevel: 12,
-    lastUpdated: '2023-07-19T09:45:00'
+    lastUpdated: '2023-07-19T09:45:00',
+    latestData: {
+      pitch: 0.1,
+      roll: 0.2,
+      rms: 0.1,
+      peak: 1.2,
+      crest_factor: 1.1,
+      f_dom: 5.2,
+      temp: 25.1,
+      sw18010p: 15.2,
+      fsr_adc: 128,
+      fsr_force_N: 2.1,
+      fsr_pressure_Pa: 85.3
+    }
   },
   { 
     id: 4, 
@@ -66,7 +130,20 @@ const devices = ref([
     pressure: 96.8, 
     inclination: 0.2,
     batteryLevel: 76,
-    lastUpdated: '2023-07-20T12:05:00'
+    lastUpdated: '2023-07-20T12:05:00',
+    latestData: {
+      pitch: 3.2,
+      roll: 2.8,
+      rms: 1.8,
+      peak: 9.2,
+      crest_factor: 2.5,
+      f_dom: 32.1,
+      temp: 31.2,
+      sw18010p: 58.7,
+      fsr_adc: 645,
+      fsr_force_N: 28.5,
+      fsr_pressure_Pa: 720.8
+    }
   },
   { 
     id: 5, 
@@ -80,7 +157,20 @@ const devices = ref([
     pressure: 97.9, 
     inclination: 0.2,
     batteryLevel: 92,
-    lastUpdated: '2023-07-20T14:25:00'
+    lastUpdated: '2023-07-20T14:25:00',
+    latestData: {
+      pitch: 1.5,
+      roll: 1.2,
+      rms: 0.9,
+      peak: 6.8,
+      crest_factor: 1.8,
+      f_dom: 18.5,
+      temp: 27.8,
+      sw18010p: 42.1,
+      fsr_adc: 385,
+      fsr_force_N: 12.3,
+      fsr_pressure_Pa: 385.2
+    }
   },
   { 
     id: 6, 
@@ -94,7 +184,20 @@ const devices = ref([
     pressure: 98.5, 
     inclination: 0.1,
     batteryLevel: 85,
-    lastUpdated: '2023-07-20T13:15:00'
+    lastUpdated: '2023-07-20T13:15:00',
+    latestData: {
+      pitch: 4.1,
+      roll: 3.8,
+      rms: 2.2,
+      peak: 11.5,
+      crest_factor: 2.9,
+      f_dom: 45.2,
+      temp: 35.1,
+      sw18010p: 68.9,
+      fsr_adc: 758,
+      fsr_force_N: 42.1,
+      fsr_pressure_Pa: 1150.3
+    }
   },
   { 
     id: 7, 
@@ -108,7 +211,20 @@ const devices = ref([
     pressure: 97.2, 
     inclination: 0.8,
     batteryLevel: 38,
-    lastUpdated: '2023-07-20T09:45:00'
+    lastUpdated: '2023-07-20T09:45:00',
+    latestData: {
+      pitch: 7.8,
+      roll: 6.5,
+      rms: 3.2,
+      peak: 15.8,
+      crest_factor: 4.1,
+      f_dom: 78.5,
+      temp: 38.9,
+      sw18010p: 85.2,
+      fsr_adc: 825,
+      fsr_force_N: 55.8,
+      fsr_pressure_Pa: 1485.7
+    }
   },
   { 
     id: 8, 
@@ -122,7 +238,20 @@ const devices = ref([
     pressure: 98.1, 
     inclination: 0.2,
     batteryLevel: 67,
-    lastUpdated: '2023-07-20T11:35:00'
+    lastUpdated: '2023-07-20T11:35:00',
+    latestData: {
+      pitch: 2.8,
+      roll: 2.1,
+      rms: 1.5,
+      peak: 7.2,
+      crest_factor: 2.2,
+      f_dom: 28.7,
+      temp: 29.5,
+      sw18010p: 52.1,
+      fsr_adc: 485,
+      fsr_force_N: 18.9,
+      fsr_pressure_Pa: 520.8
+    }
   },
   { 
     id: 9, 
@@ -136,7 +265,20 @@ const devices = ref([
     pressure: 96.5, 
     inclination: 0.4,
     batteryLevel: 5,
-    lastUpdated: '2023-07-19T16:20:00'
+    lastUpdated: '2023-07-19T16:20:00',
+    latestData: {
+      pitch: 0.2,
+      roll: 0.1,
+      rms: 0.05,
+      peak: 0.8,
+      crest_factor: 1.05,
+      f_dom: 2.1,
+      temp: 24.5,
+      sw18010p: 8.2,
+      fsr_adc: 45,
+      fsr_force_N: 0.8,
+      fsr_pressure_Pa: 25.1
+    }
   },
   { 
     id: 10, 
@@ -150,7 +292,20 @@ const devices = ref([
     pressure: 98.8, 
     inclination: 0.1,
     batteryLevel: 91,
-    lastUpdated: '2023-07-20T15:10:00'
+    lastUpdated: '2023-07-20T15:10:00',
+    latestData: {
+      pitch: 1.2,
+      roll: 0.9,
+      rms: 0.7,
+      peak: 4.5,
+      crest_factor: 1.6,
+      f_dom: 15.2,
+      temp: 26.8,
+      sw18010p: 38.5,
+      fsr_adc: 295,
+      fsr_force_N: 8.2,
+      fsr_pressure_Pa: 285.5
+    }
   },
   { 
     id: 11, 
@@ -164,7 +319,20 @@ const devices = ref([
     pressure: 97.8, 
     inclination: 0.3,
     batteryLevel: 42,
-    lastUpdated: '2023-07-20T12:40:00'
+    lastUpdated: '2023-07-20T12:40:00',
+    latestData: {
+      pitch: 8.5,
+      roll: 7.2,
+      rms: 4.1,
+      peak: 18.5,
+      crest_factor: 4.8,
+      f_dom: 95.2,
+      temp: 45.8,
+      sw18010p: 89.5,
+      fsr_adc: 885,
+      fsr_force_N: 68.2,
+      fsr_pressure_Pa: 1785.9
+    }
   },
   { 
     id: 12, 
@@ -178,7 +346,20 @@ const devices = ref([
     pressure: 98.3, 
     inclination: 0.2,
     batteryLevel: 83,
-    lastUpdated: '2023-07-20T14:55:00'
+    lastUpdated: '2023-07-20T14:55:00',
+    latestData: {
+      pitch: 1.8,
+      roll: 1.5,
+      rms: 0.8,
+      peak: 5.2,
+      crest_factor: 1.9,
+      f_dom: 22.1,
+      temp: 28.2,
+      sw18010p: 41.8,
+      fsr_adc: 358,
+      fsr_force_N: 11.5,
+      fsr_pressure_Pa: 395.8
+    }
   }
 ]);
 
@@ -268,6 +449,17 @@ watch([searchQuery, statusFilter], () => {
   }
 });
 
+// Function to get parameter status class
+function getParameterStatusClass(device, parameter) {
+  const status = checkStatus(device.latestData[parameter], parameter);
+  switch (status) {
+    case 'critical': return 'status-inactive';
+    case 'warning': return 'status-warning';
+    case 'normal': return 'status-active';
+    default: return '';
+  }
+}
+
 // Function to update map markers based on filtered devices
 function updateMapMarkers() {
   try {
@@ -276,6 +468,12 @@ function updateMapMarkers() {
       marker.remove();
     });
     markers = {};
+    
+    // Define global function to handle navigation from popup buttons BEFORE creating markers
+    window.goToDeviceDetails = (deviceId) => {
+      console.log('Navigating to device:', deviceId); // Debug log
+      router.push(`/device/${deviceId}`);
+    };
     
     // Add markers for filtered devices
     filteredDevices.value.forEach(device => {
@@ -286,80 +484,119 @@ function updateMapMarkers() {
       });
       
       // Create a marker with a modern popup design
-      const marker = L.marker([device.lat, device.lng], { icon: markerIcon })
-        .bindPopup(`
-          <div class="modern-popup">
-            <div class="popup-header ${getStatusClass(device.status)}">
-              <h3>${device.name}</h3>
-              <span class="popup-badge">${device.status}</span>
-            </div>
-            <div class="popup-body">
-              <div class="popup-info">
-                <div class="info-row">
-                  <i class="fas ${device.type.includes('Vibration') ? 'fa-wave-square' : 
-                    device.type.includes('Pressure') ? 'fa-tachometer-alt' : 'fa-ruler-vertical'}"></i>
-                  <span>${device.type}</span>
-                </div>
-                <div class="info-row">
-                  <i class="fas fa-map-marker-alt"></i>
-                  <span>${device.location}</span>
-                </div>
-                <div class="info-row">
-                  <i class="fas fa-battery-${device.batteryLevel > 75 ? 'full' : 
-                    device.batteryLevel > 50 ? 'three-quarters' : 
-                    device.batteryLevel > 25 ? 'half' : 'quarter'}"></i>
-                  <span>${device.batteryLevel}% Battery</span>
-                </div>
+      const marker = L.marker([device.lat, device.lng], { icon: markerIcon });
+      
+      // Add popup content
+      const popupContent = `
+        <div class="modern-popup">
+          <div class="popup-header ${getStatusClass(device.status)}">
+            <h3>${device.name}</h3>
+            <span class="popup-badge">${device.status}</span>
+          </div>
+          <div class="popup-body">
+            <div class="popup-info">
+              <div class="info-row">
+                <i class="fas ${device.type.includes('Vibration') ? 'fa-wave-square' : 
+                  device.type.includes('Pressure') ? 'fa-tachometer-alt' : 'fa-ruler-vertical'}"></i>
+                <span>${device.type}</span>
               </div>
-              <div class="popup-metrics">
-                <div class="mini-metric">
-                  <span class="mini-metric-value">${device.vibration}</span>
-                  <span class="mini-metric-label">Hz</span>
-                </div>
-                <div class="mini-metric">
-                  <span class="mini-metric-value">${device.pressure}</span>
-                  <span class="mini-metric-label">kPa</span>
-                </div>
-                <div class="mini-metric">
-                  <span class="mini-metric-value">${device.inclination}</span>
-                  <span class="mini-metric-label">°</span>
-                </div>
+              <div class="info-row">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>${device.location}</span>
+              </div>
+              <div class="info-row">
+                <i class="fas fa-battery-${device.batteryLevel > 75 ? 'full' : 
+                  device.batteryLevel > 50 ? 'three-quarters' : 
+                  device.batteryLevel > 25 ? 'half' : 'quarter'}"></i>
+                <span>${device.batteryLevel}% Battery</span>
               </div>
             </div>
-            <div class="popup-footer">
-              <button id="device-btn-${device.id}" class="popup-btn">
-                <span>View Details</span>
-                <i class="fas fa-arrow-right"></i>
-              </button>
+            <div class="popup-metrics">
+              <div class="mini-metric ${getParameterStatusClass(device, 'pitch')}">
+                <span class="mini-metric-value">${device.latestData.pitch.toFixed(1)}</span>
+                <span class="mini-metric-label">Pitch</span>
+              </div>
+              <div class="mini-metric ${getParameterStatusClass(device, 'roll')}">
+                <span class="mini-metric-value">${device.latestData.roll.toFixed(1)}</span>
+                <span class="mini-metric-label">Roll</span>
+              </div>
+              <div class="mini-metric ${getParameterStatusClass(device, 'temp')}">
+                <span class="mini-metric-value">${device.latestData.temp.toFixed(1)}</span>
+                <span class="mini-metric-label">Temp</span>
+              </div>
+            </div>
+            <div class="popup-additional-metrics">
+              <div class="additional-metric">
+                <span class="additional-metric-label">RMS:</span>
+                <span class="additional-metric-value ${getParameterStatusClass(device, 'rms')}">${device.latestData.rms.toFixed(2)}</span>
+              </div>
+              <div class="additional-metric">
+                <span class="additional-metric-label">Peak:</span>
+                <span class="additional-metric-value ${getParameterStatusClass(device, 'peak')}">${device.latestData.peak.toFixed(1)}</span>
+              </div>
+              <div class="additional-metric">
+                <span class="additional-metric-label">F Dom:</span>
+                <span class="additional-metric-value ${getParameterStatusClass(device, 'f_dom')}">${device.latestData.f_dom.toFixed(1)} Hz</span>
+              </div>
             </div>
           </div>
-        `, { 
-          maxWidth: 300,
-          className: 'custom-popup'
-        });
+          <div class="popup-footer">
+            <button class="popup-btn" data-device-id="${device.id}">
+              <span>View Details</span>
+              <i class="fas fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+      `;
+      
+      // Bind popup with content
+      marker.bindPopup(popupContent, { 
+        maxWidth: 320,
+        className: 'custom-popup'
+      });
+      
+      // Add click event to marker for direct navigation (double-click)
+      marker.on('dblclick', function(e) {
+        console.log('Double-clicked marker for device:', device.id);
+        router.push(`/device/${device.id}`);
+      });
+      
+      // Add popup open event to setup button click handler
+      marker.on('popupopen', function(e) {
+        // Wait a bit for the DOM to be ready
+        setTimeout(() => {
+          const popupBtn = document.querySelector('.popup-btn[data-device-id="' + device.id + '"]');
+          if (popupBtn) {
+            popupBtn.addEventListener('click', function(event) {
+              event.preventDefault();
+              event.stopPropagation();
+              console.log('Popup button clicked for device:', device.id);
+              router.push(`/device/${device.id}`);
+            });
+          }
+        }, 100);
+      });
       
       // Add the marker to the map
       marker.addTo(map);
       
       // Store the marker for future reference
       markers[device.id] = marker;
-      
-      // Add event listener to the popup after it opens
-      marker.on('popupopen', () => {
-        setTimeout(() => {
-          const button = document.getElementById(`device-btn-${device.id}`);
-          if (button) {
-            button.addEventListener('click', () => {
-              viewDeviceDetails(device.id);
-            });
-          }
-        }, 100);
-      });
     });
+    
   } catch (error) {
     console.error("Error updating map markers:", error);
   }
 }
+
+// Clean up the global function when component is unmounted
+import { onUnmounted } from 'vue';
+
+onUnmounted(() => {
+  if (typeof window.goToDeviceDetails === 'function') {
+    delete window.goToDeviceDetails;
+  }
+});
 
 function initMap() {
   try {
@@ -484,16 +721,45 @@ function initMap() {
             
             <div class="device-metrics">
               <div class="metric">
-                <span class="metric-label">Vibration</span>
-                <span class="metric-value">{{ device.vibration }} Hz</span>
+                <span class="metric-label">Pitch</span>
+                <span :class="['metric-value', getParameterStatusClass(device, 'pitch')]">{{ device.latestData.pitch.toFixed(1) }}°</span>
               </div>
               <div class="metric">
-                <span class="metric-label">Pressure</span>
-                <span class="metric-value">{{ device.pressure }} kPa</span>
+                <span class="metric-label">Roll</span>
+                <span :class="['metric-value', getParameterStatusClass(device, 'roll')]">{{ device.latestData.roll.toFixed(1) }}°</span>
               </div>
               <div class="metric">
-                <span class="metric-label">Inclination</span>
-                <span class="metric-value">{{ device.inclination }}°</span>
+                <span class="metric-label">Temperature</span>
+                <span :class="['metric-value', getParameterStatusClass(device, 'temp')]">{{ device.latestData.temp.toFixed(1) }}°C</span>
+              </div>
+            </div>
+            
+            <div class="device-additional-metrics">
+              <div class="additional-metrics-grid">
+                <div class="additional-metric-item">
+                  <span class="additional-metric-label">RMS:</span>
+                  <span :class="['additional-metric-value', getParameterStatusClass(device, 'rms')]">{{ device.latestData.rms.toFixed(2) }}</span>
+                </div>
+                <div class="additional-metric-item">
+                  <span class="additional-metric-label">Peak:</span>
+                  <span :class="['additional-metric-value', getParameterStatusClass(device, 'peak')]">{{ device.latestData.peak.toFixed(1) }}</span>
+                </div>
+                <div class="additional-metric-item">
+                  <span class="additional-metric-label">Crest:</span>
+                  <span :class="['additional-metric-value', getParameterStatusClass(device, 'crest_factor')]">{{ device.latestData.crest_factor.toFixed(1) }}</span>
+                </div>
+                <div class="additional-metric-item">
+                  <span class="additional-metric-label">F Dom:</span>
+                  <span :class="['additional-metric-value', getParameterStatusClass(device, 'f_dom')]">{{ device.latestData.f_dom.toFixed(1) }} Hz</span>
+                </div>
+                <div class="additional-metric-item">
+                  <span class="additional-metric-label">FSR Force:</span>
+                  <span :class="['additional-metric-value', getParameterStatusClass(device, 'fsr_force_N')]">{{ device.latestData.fsr_force_N.toFixed(1) }} N</span>
+                </div>
+                <div class="additional-metric-item">
+                  <span class="additional-metric-label">FSR Pressure:</span>
+                  <span :class="['additional-metric-value', getParameterStatusClass(device, 'fsr_pressure_Pa')]">{{ device.latestData.fsr_pressure_Pa.toFixed(0) }} Pa</span>
+                </div>
               </div>
             </div>
             
@@ -961,29 +1227,71 @@ select {
 }
 
 :global(.popup-btn) {
-  width: 100%;
-  padding: 10px;
-  border: none;
-  background: #2563eb;
-  color: white;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: all 0.2s;
+  width: 100% !important;
+  padding: 10px !important;
+  border: none !important;
+  background: #2563eb !important;
+  color: white !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-weight: 500 !important;
+  font-size: 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  transition: all 0.2s !important;
+  text-align: center !important;
 }
 
 :global(.popup-btn:hover) {
-  background: #1d4ed8;
-  transform: translateY(-1px);
+  background: #1d4ed8 !important;
+  transform: translateY(-1px) !important;
+}
+
+:global(.popup-btn:active) {
+  transform: translateY(0) !important;
 }
 
 :global(.popup-btn i) {
-  font-size: 12px;
+  font-size: 12px !important;
+}
+
+/* Ensure popup content is clickable */
+:global(.leaflet-popup-content) {
+  pointer-events: auto !important;
+}
+
+:global(.leaflet-popup-content-wrapper) {
+  pointer-events: auto !important;
+}
+
+/* Enhanced mini-metric status colors */
+:global(.mini-metric.status-active) {
+  background: rgba(16, 185, 129, 0.1) !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+}
+
+:global(.mini-metric.status-warning) {
+  background: rgba(245, 158, 11, 0.1) !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+}
+
+:global(.mini-metric.status-inactive) {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+:global(.mini-metric.status-active .mini-metric-value) {
+  color: #059669 !important;
+}
+
+:global(.mini-metric.status-warning .mini-metric-value) {
+  color: #d97706 !important;
+}
+
+:global(.mini-metric.status-inactive .mini-metric-value) {
+  color: #dc2626 !important;
 }
 
 @media (max-width: 768px) {

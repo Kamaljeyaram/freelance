@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.0.0",
+    "axios": "^1.11.0",
     "chart.js": "^4.5.0",
     "gsap": "^3.13.0",
     "html2pdf.js": "^0.10.3",
