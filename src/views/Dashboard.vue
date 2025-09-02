@@ -405,7 +405,37 @@ function getStatusIcon(status) {
 }
 
 function viewDeviceDetails(deviceId) {
-  router.push(`/device/${deviceId}`);
+  console.log('=== Navigation Debug ===');
+  console.log('Device ID:', deviceId, 'Type:', typeof deviceId);
+  console.log('Current route:', router.currentRoute.value.path);
+  console.log('Target route:', `/device/${deviceId}`);
+  
+  // Find the device to get more info
+  const device = devices.value.find(d => d.id === deviceId);
+  console.log('Device found:', device ? device.name : 'NOT FOUND');
+  
+  try {
+    router.push(`/device/${deviceId}`)
+      .then(() => {
+        console.log('✅ Navigation successful for device:', deviceId);
+      })
+      .catch((error) => {
+        console.error('❌ Router.push failed for device:', deviceId, error);
+        // Fallback navigation
+        try {
+          const baseUrl = window.location.origin + window.location.pathname;
+          const targetUrl = `${baseUrl}#/device/${deviceId}`;
+          console.log('Trying fallback URL:', targetUrl);
+          window.location.href = targetUrl;
+        } catch (urlError) {
+          console.error('❌ URL navigation failed:', urlError);
+          alert(`Failed to navigate to device ${device ? device.name : deviceId}. Route may not exist.`);
+        }
+      });
+  } catch (error) {
+    console.error('❌ Navigation setup failed:', error);
+    alert(`Navigation error for device ${device ? device.name : deviceId}: ${error.message}`);
+  }
 }
 
 function formatLastUpdated(dateString) {
@@ -469,12 +499,6 @@ function updateMapMarkers() {
     });
     markers = {};
     
-    // Define global function to handle navigation from popup buttons BEFORE creating markers
-    window.goToDeviceDetails = (deviceId) => {
-      console.log('Navigating to device:', deviceId); // Debug log
-      router.push(`/device/${deviceId}`);
-    };
-    
     // Add markers for filtered devices
     filteredDevices.value.forEach(device => {
       const markerIcon = L.divIcon({
@@ -483,12 +507,12 @@ function updateMapMarkers() {
         iconSize: [30, 30]
       });
       
-      // Create a marker with a modern popup design
+      // Create marker
       const marker = L.marker([device.lat, device.lng], { icon: markerIcon });
       
-      // Add popup content
+      // Enhanced popup content with better debugging
       const popupContent = `
-        <div class="modern-popup">
+        <div class="modern-popup" data-device-id="${device.id}">
           <div class="popup-header ${getStatusClass(device.status)}">
             <h3>${device.name}</h3>
             <span class="popup-badge">${device.status}</span>
@@ -509,6 +533,10 @@ function updateMapMarkers() {
                   device.batteryLevel > 50 ? 'three-quarters' : 
                   device.batteryLevel > 25 ? 'half' : 'quarter'}"></i>
                 <span>${device.batteryLevel}% Battery</span>
+              </div>
+              <div class="info-row debug-info">
+                <i class="fas fa-bug"></i>
+                <span>Device ID: ${device.id}</span>
               </div>
             </div>
             <div class="popup-metrics">
@@ -541,7 +569,7 @@ function updateMapMarkers() {
             </div>
           </div>
           <div class="popup-footer">
-            <button class="popup-btn" data-device-id="${device.id}">
+            <button class="popup-btn" data-device-id="${device.id}" data-device-name="${device.name}">
               <span>View Details</span>
               <i class="fas fa-arrow-right"></i>
             </button>
@@ -549,43 +577,115 @@ function updateMapMarkers() {
         </div>
       `;
       
-      // Bind popup with content
+      // Bind popup
       marker.bindPopup(popupContent, { 
         maxWidth: 320,
         className: 'custom-popup'
       });
       
-      // Add click event to marker for direct navigation (double-click)
-      marker.on('dblclick', function(e) {
-        console.log('Double-clicked marker for device:', device.id);
-        router.push(`/device/${device.id}`);
+      // Enhanced navigation with better error handling
+      const navigateToDevice = (deviceId, deviceName = '') => {
+        console.log(`🚀 Navigating to device: ${deviceId} (${deviceName})`);
+        
+        // Ensure deviceId is a number if it should be
+        const numericId = parseInt(deviceId);
+        const finalId = isNaN(numericId) ? deviceId : numericId;
+        
+        console.log('Original ID:', deviceId, 'Processed ID:', finalId);
+        
+        try {
+          // Use the enhanced viewDeviceDetails function
+          viewDeviceDetails(finalId);
+        } catch (error) {
+          console.error(`❌ Navigation failed for ${deviceName} (ID: ${deviceId}):`, error);
+          // Last resort: show an alert with debug info
+          alert(`Navigation failed for ${deviceName}\nDevice ID: ${deviceId}\nError: ${error.message}\n\nPlease check the browser console for more details.`);
+        }
+      };
+      
+      // MAIN NAVIGATION: Single click on marker to navigate directly
+      marker.on('click', function(e) {
+        console.log(`🖱️ Marker clicked: ${device.name} (ID: ${device.id})`);
+        try {
+          e.originalEvent?.preventDefault();
+          e.originalEvent?.stopPropagation();
+        } catch (err) {
+          console.warn('Could not prevent default events:', err);
+        }
+        
+        // Close any open popups first
+        map.closePopup();
+        
+        // Navigate directly to device details
+        navigateToDevice(device.id, device.name);
       });
       
-      // Add popup open event to setup button click handler
+      // Alternative: Right-click to show popup with details
+      marker.on('contextmenu', function(e) {
+        console.log(`👆 Right-click on marker: ${device.name} (ID: ${device.id})`);
+        try {
+          e.originalEvent?.preventDefault();
+        } catch (err) {
+          console.warn('Could not prevent context menu:', err);
+        }
+        marker.openPopup();
+      });
+      
+      // Handle popup button clicks when popup is opened
       marker.on('popupopen', function(e) {
-        // Wait a bit for the DOM to be ready
+        console.log(`📋 Popup opened for: ${device.name} (ID: ${device.id})`);
+        
         setTimeout(() => {
-          const popupBtn = document.querySelector('.popup-btn[data-device-id="' + device.id + '"]');
-          if (popupBtn) {
-            popupBtn.addEventListener('click', function(event) {
-              event.preventDefault();
-              event.stopPropagation();
-              console.log('Popup button clicked for device:', device.id);
-              router.push(`/device/${device.id}`);
-            });
+          const popupElement = e.popup.getElement();
+          if (popupElement) {
+            const button = popupElement.querySelector('.popup-btn');
+            if (button) {
+              const buttonDeviceId = button.getAttribute('data-device-id');
+              const buttonDeviceName = button.getAttribute('data-device-name');
+              
+              console.log('Setting up button click for:', buttonDeviceName, 'ID:', buttonDeviceId);
+              
+              // Remove any existing click handlers
+              button.onclick = null;
+              
+              // Add new click handler
+              button.onclick = function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                console.log(`🔘 Popup button clicked: ${buttonDeviceName} (ID: ${buttonDeviceId})`);
+                map.closePopup();
+                navigateToDevice(buttonDeviceId, buttonDeviceName);
+                return false;
+              };
+              
+              // Also add event listener as backup
+              button.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                console.log(`🔘 Popup button clicked (backup): ${buttonDeviceName} (ID: ${buttonDeviceId})`);
+              }, { once: true });
+              
+            } else {
+              console.warn('❌ Popup button not found for device:', device.name);
+            }
+          } else {
+            console.warn('❌ Popup element not found for device:', device.name);
           }
-        }, 100);
+        }, 150);
       });
       
-      // Add the marker to the map
+      // Add marker to map
       marker.addTo(map);
-      
-      // Store the marker for future reference
       markers[device.id] = marker;
+      
+      console.log(`✅ Added marker: ${device.name} (ID: ${device.id})`);
     });
     
+    console.log(`📍 Total markers added: ${Object.keys(markers).length}`);
+    console.log('All device IDs:', filteredDevices.value.map(d => `${d.name}: ${d.id}`));
+    
   } catch (error) {
-    console.error("Error updating map markers:", error);
+    console.error("❌ Error updating map markers:", error);
   }
 }
 
@@ -593,6 +693,9 @@ function updateMapMarkers() {
 import { onUnmounted } from 'vue';
 
 onUnmounted(() => {
+  if (typeof window.navigateToDevice === 'function') {
+    delete window.navigateToDevice;
+  }
   if (typeof window.goToDeviceDetails === 'function') {
     delete window.goToDeviceDetails;
   }
@@ -702,7 +805,12 @@ function initMap() {
             v-for="device in filteredDevices" 
             :key="device.id" 
             class="device-card"
+            :data-device-id="device.id"
+            :data-device-name="device.name"
             @click="viewDeviceDetails(device.id)"
+            @keyup.enter="viewDeviceDetails(device.id)"
+            tabindex="0"
+            :aria-label="`View details for ${device.name}`"
           >
             <div class="device-header">
               <div class="device-icon">
@@ -773,6 +881,10 @@ function initMap() {
               <div class="last-updated">
                 <i class="far fa-clock"></i>
                 <span>{{ formatLastUpdated(device.lastUpdated) }}</span>
+              </div>
+              <!-- Debug info -->
+              <div class="debug-device-id" v-if="true">
+                ID: {{ device.id }}
               </div>
             </div>
           </div>
@@ -891,12 +1003,45 @@ select {
   cursor: pointer;
   transition: all 0.3s ease;
   border: 1px solid var(--border-color);
+  outline: none;
+  position: relative;
 }
 
-.device-card:hover {
+.device-card:hover,
+.device-card:focus {
   transform: translateY(-4px);
   box-shadow: 0 12px 24px rgba(0,0,0,0.1);
   border-color: var(--primary-color);
+}
+
+.device-card:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.device-card:active {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+}
+
+/* Debug styles for troubleshooting */
+.device-card::after {
+  content: "ID: " attr(data-device-id);
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--primary-color);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.device-card:hover::after {
+  opacity: 1;
 }
 
 .device-header {
@@ -1072,21 +1217,90 @@ select {
   justify-content: center;
   box-shadow: 0 2px 8px rgba(0,0,0,0.3);
   font-size: 14px;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+:global(.marker-icon:hover) {
+  transform: scale(1.2) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4) !important;
+  border-color: rgba(255, 255, 255, 0.8) !important;
 }
 
 :global(.marker-icon.status-active) {
-  background-color: #10b981 !important; /* Use the success color directly */
+  background-color: #10b981 !important;
   color: white;
 }
 
 :global(.marker-icon.status-warning) {
-  background-color: #f59e0b !important; /* Use the warning color directly */
+  background-color: #f59e0b !important;
   color: white;
 }
 
 :global(.marker-icon.status-inactive) {
-  background-color: #ef4444 !important; /* Use the danger color directly */
+  background-color: #ef4444 !important;
   color: white;
+}
+
+/* Improved popup button styling */
+:global(.popup-btn) {
+  width: 100% !important;
+  padding: 12px 16px !important;
+  border: none !important;
+  background: #2563eb !important;
+  color: white !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  transition: all 0.3s ease !important;
+  text-align: center !important;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2) !important;
+}
+
+:global(.popup-btn:hover) {
+  background: #1d4ed8 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+}
+
+:global(.popup-btn:active) {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2) !important;
+}
+
+/* Add click instructions to map */
+#map::before {
+  content: "💡 Click any marker to view device details | Right-click for preview";
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(37, 99, 235, 0.9);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  z-index: 1000;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* Ensure all interactive elements work */
+:global(.leaflet-marker-icon) {
+  cursor: pointer !important;
+}
+
+:global(.leaflet-clickable) {
+  cursor: pointer !important;
+}
+
+:global(.custom-marker) {
+  cursor: pointer !important;
 }
 
 :global(.popup-content) {
@@ -1097,33 +1311,6 @@ select {
 :global(.popup-content h3) {
   margin-top: 0;
   font-size: 1rem;
-}
-
-:global(.popup-btn) {
-  background: var(--primary-color);
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-top: 0.5rem;
-}
-
-/* Updated modern popup styles */
-:global(.custom-popup .leaflet-popup-content-wrapper) {
-  padding: 0;
-  overflow: hidden;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-}
-
-:global(.custom-popup .leaflet-popup-content) {
-  margin: 0;
-  width: 280px !important;
-}
-
-:global(.custom-popup .leaflet-popup-tip) {
-  background: white;
 }
 
 :global(.modern-popup) {
@@ -1221,51 +1408,21 @@ select {
   margin-top: 2px;
 }
 
-:global(.popup-footer) {
-  border-top: 1px solid #f1f5f9;
-  padding-top: 12px;
+:global(.custom-popup .leaflet-popup-content-wrapper) {
+  padding: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
 }
 
-:global(.popup-btn) {
-  width: 100% !important;
-  padding: 10px !important;
-  border: none !important;
-  background: #2563eb !important;
-  color: white !important;
-  border-radius: 6px !important;
-  cursor: pointer !important;
-  font-weight: 500 !important;
-  font-size: 14px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 8px !important;
-  transition: all 0.2s !important;
-  text-align: center !important;
+:global(.custom-popup .leaflet-popup-content) {
+  margin: 0;
+  width: 280px !important;
 }
 
-:global(.popup-btn:hover) {
-  background: #1d4ed8 !important;
-  transform: translateY(-1px) !important;
+:global(.custom-popup .leaflet-popup-tip) {
+  background: white;
 }
-
-:global(.popup-btn:active) {
-  transform: translateY(0) !important;
-}
-
-:global(.popup-btn i) {
-  font-size: 12px !important;
-}
-
-/* Ensure popup content is clickable */
-:global(.leaflet-popup-content) {
-  pointer-events: auto !important;
-}
-
-:global(.leaflet-popup-content-wrapper) {
-  pointer-events: auto !important;
-}
-
 /* Enhanced mini-metric status colors */
 :global(.mini-metric.status-active) {
   background: rgba(16, 185, 129, 0.1) !important;

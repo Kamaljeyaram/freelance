@@ -74,12 +74,12 @@ const liveReadings = ref({
   }
 });
 
-// Device information - this would come from API in real app
+// Device information - updated to include ALL devices from Dashboard
 const mockDevices = [
   { 
     id: 1, 
     name: 'Anna Nagar Bridge Sensor', 
-    type: 'Multi-Sensor',
+    type: 'Vibration Sensor',
     location: 'Anna Nagar Bridge',
     status: 'active',
     model: 'SM-MULTI2000',
@@ -108,55 +108,334 @@ const mockDevices = [
   },
   { 
     id: 2, 
-    name: 'Building B Sensor 1', 
+    name: 'T Nagar Building Sensor', 
     type: 'Pressure Sensor',
-    location: 'Building B',
+    location: 'T Nagar Complex',
     status: 'warning',
     model: 'SM-PS1500',
     serialNumber: 'PS1500-67890',
     installDate: '2023-02-20',
     lastMaintenance: '2023-06-15',
     firmware: 'v1.8.2',
-    lat: 51.51, 
-    lng: -0.1, 
+    lat: 13.0418, 
+    lng: 80.2341, 
     batteryLevel: 45,
     signalStrength: 78,
+    thresholds: {
+      pitch: { min: 0, max: 1.2, warning: 0.8 },
+      roll: { min: 0, max: 1.2, warning: 0.8 },
+      rms: { min: 0.1, max: 0.9, warning: 0.7 },
+      peak: { min: 0.1, max: 1.0, warning: 0.8 },
+      crest_factor: { min: 1.0, max: 2.0, warning: 1.5 },
+      f_dom: { min: 40, max: 60, warning: 55 },
+      temp: { min: 20, max: 30, warning: 28 },
+      sw18010p: { min: 0.5, max: 1.0, warning: 0.9 },
+      fsr_adc: { min: 400, max: 600, warning: 550 },
+      fsr_force_N: { min: 5, max: 15, warning: 12 },
+      fsr_pressure_Pa: { min: 95, max: 101, warning: 100 }
+    },
     lastUpdated: '2023-07-20T11:15:00'
   },
   { 
     id: 3, 
-    name: 'Building B Sensor 2', 
+    name: 'Marina Beach Sensor', 
     type: 'Inclination Sensor',
-    location: 'Building B',
+    location: 'Marina Beach Tower',
     status: 'inactive',
     model: 'SM-IS1000',
     serialNumber: 'IS1000-54321',
     installDate: '2023-02-20',
     lastMaintenance: '2023-05-10',
     firmware: 'v1.4.6',
-    lat: 51.509, 
-    lng: -0.11, 
+    lat: 13.0500, 
+    lng: 80.2824, 
     batteryLevel: 12,
     signalStrength: 32,
+    thresholds: {
+      pitch: { min: 0, max: 1.2, warning: 0.8 },
+      roll: { min: 0, max: 1.2, warning: 0.8 },
+      rms: { min: 0.1, max: 0.9, warning: 0.7 },
+      peak: { min: 0.1, max: 1.0, warning: 0.8 },
+      crest_factor: { min: 1.0, max: 2.0, warning: 1.5 },
+      f_dom: { min: 40, max: 60, warning: 55 },
+      temp: { min: 20, max: 30, warning: 28 },
+      sw18010p: { min: 0.5, max: 1.0, warning: 0.9 },
+      fsr_adc: { min: 400, max: 600, warning: 550 },
+      fsr_force_N: { min: 5, max: 15, warning: 12 },
+      fsr_pressure_Pa: { min: 95, max: 101, warning: 100 }
+    },
     lastUpdated: '2023-07-19T09:45:00'
   },
   { 
     id: 4, 
-    name: 'Tower C Sensor', 
+    name: 'Chennai Port Sensor', 
     type: 'Vibration Sensor',
-    location: 'Tower C',
+    location: 'Chennai Port',
     status: 'active',
     model: 'SM-VS2000',
     serialNumber: 'VS2000-24680',
     installDate: '2023-03-05',
     lastMaintenance: '2023-06-25',
     firmware: 'v2.1.4',
-    lat: 51.515, 
-    lng: -0.08, 
+    lat: 13.1056, 
+    lng: 80.2931, 
     batteryLevel: 76,
     signalStrength: 89,
+    thresholds: {
+      pitch: { min: 0, max: 1.2, warning: 0.8 },
+      roll: { min: 0, max: 1.2, warning: 0.8 },
+      rms: { min: 0.1, max: 0.9, warning: 0.7 },
+      peak: { min: 0.1, max: 1.0, warning: 0.8 },
+      crest_factor: { min: 1.0, max: 2.0, warning: 1.5 },
+      f_dom: { min: 40, max: 60, warning: 55 },
+      temp: { min: 20, max: 30, warning: 28 },
+      sw18010p: { min: 0.5, max: 1.0, warning: 0.9 },
+      fsr_adc: { min: 400, max: 600, warning: 550 },
+      fsr_force_N: { min: 5, max: 15, warning: 12 },
+      fsr_pressure_Pa: { min: 95, max: 101, warning: 100 }
+    },
     lastUpdated: '2023-07-20T12:05:00'
   },
+  { 
+    id: 5, 
+    name: 'Velachery Bridge Sensor', 
+    type: 'Vibration Sensor',
+    location: 'Velachery Bridge',
+    status: 'active',
+    model: 'SM-VS2100',
+    serialNumber: 'VS2100-13579',
+    installDate: '2023-03-10',
+    lastMaintenance: '2023-06-28',
+    firmware: 'v2.1.4',
+    lat: 12.9816, 
+    lng: 80.2181, 
+    batteryLevel: 92,
+    signalStrength: 94,
+    thresholds: {
+      pitch: { min: 0, max: 1.2, warning: 0.8 },
+      roll: { min: 0, max: 1.2, warning: 0.8 },
+      rms: { min: 0.1, max: 0.9, warning: 0.7 },
+      peak: { min: 0.1, max: 1.0, warning: 0.8 },
+      crest_factor: { min: 1.0, max: 2.0, warning: 1.5 },
+      f_dom: { min: 40, max: 60, warning: 55 },
+      temp: { min: 20, max: 30, warning: 28 },
+      sw18010p: { min: 0.5, max: 1.0, warning: 0.9 },
+      fsr_adc: { min: 400, max: 600, warning: 550 },
+      fsr_force_N: { min: 5, max: 15, warning: 12 },
+      fsr_pressure_Pa: { min: 95, max: 101, warning: 100 }
+    },
+    lastUpdated: '2023-07-20T14:25:00'
+  },
+  { 
+    id: 6, 
+    name: 'Chennai Central Station', 
+    type: 'Pressure Sensor',
+    location: 'Central Railway Station',
+    status: 'active',
+    model: 'SM-PS1600',
+    serialNumber: 'PS1600-97531',
+    installDate: '2023-03-15',
+    lastMaintenance: '2023-06-30',
+    firmware: 'v1.9.1',
+    lat: 13.0827, 
+    lng: 80.2755, 
+    batteryLevel: 85,
+    signalStrength: 91,
+    thresholds: {
+      pitch: { min: 0, max: 1.2, warning: 0.8 },
+      roll: { min: 0, max: 1.2, warning: 0.8 },
+      rms: { min: 0.1, max: 0.9, warning: 0.7 },
+      peak: { min: 0.1, max: 1.0, warning: 0.8 },
+      crest_factor: { min: 1.0, max: 2.0, warning: 1.5 },
+      f_dom: { min: 40, max: 60, warning: 55 },
+      temp: { min: 20, max: 30, warning: 28 },
+      sw18010p: { min: 0.5, max: 1.0, warning: 0.9 },
+      fsr_adc: { min: 400, max: 600, warning: 550 },
+      fsr_force_N: { min: 5, max: 15, warning: 12 },
+      fsr_pressure_Pa: { min: 95, max: 101, warning: 100 }
+    },
+    lastUpdated: '2023-07-20T13:15:00'
+  },
+  { 
+    id: 7, 
+    name: 'Adyar River Bridge', 
+    type: 'Inclination Sensor',
+    location: 'Adyar River Crossing',
+    status: 'warning',
+    model: 'SM-IS1100',
+    serialNumber: 'IS1100-86420',
+    installDate: '2023-03-20',
+    lastMaintenance: '2023-06-05',
+    firmware: 'v1.5.2',
+    lat: 13.0136, 
+    lng: 80.2629, 
+    batteryLevel: 38,
+    signalStrength: 65,
+    thresholds: {
+      pitch: { min: 0, max: 1.2, warning: 0.8 },
+      roll: { min: 0, max: 1.2, warning: 0.8 },
+      rms: { min: 0.1, max: 0.9, warning: 0.7 },
+      peak: { min: 0.1, max: 1.0, warning: 0.8 },
+      crest_factor: { min: 1.0, max: 2.0, warning: 1.5 },
+      f_dom: { min: 40, max: 60, warning: 55 },
+      temp: { min: 20, max: 30, warning: 28 },
+      sw18010p: { min: 0.5, max: 1.0, warning: 0.9 },
+      fsr_adc: { min: 400, max: 600, warning: 550 },
+      fsr_force_N: { min: 5, max: 15, warning: 12 },
+      fsr_pressure_Pa: { min: 95, max: 101, warning: 100 }
+    },
+    lastUpdated: '2023-07-20T09:45:00'
+  },
+  { 
+    id: 8, 
+    name: 'Guindy Flyover Sensor', 
+    type: 'Vibration Sensor',
+    location: 'Guindy Flyover',
+    status: 'active',
+    model: 'SM-VS2200',
+    serialNumber: 'VS2200-75319',
+    installDate: '2023-03-25',
+    lastMaintenance: '2023-07-02',
+    firmware: 'v2.1.4',
+    lat: 13.0067, 
+    lng: 80.2206, 
+    batteryLevel: 67,
+    signalStrength: 82,
+    thresholds: {
+      pitch: { min: 0, max: 1.2, warning: 0.8 },
+      roll: { min: 0, max: 1.2, warning: 0.8 },
+      rms: { min: 0.1, max: 0.9, warning: 0.7 },
+      peak: { min: 0.1, max: 1.0, warning: 0.8 },
+      crest_factor: { min: 1.0, max: 2.0, warning: 1.5 },
+      f_dom: { min: 40, max: 60, warning: 55 },
+      temp: { min: 20, max: 30, warning: 28 },
+      sw18010p: { min: 0.5, max: 1.0, warning: 0.9 },
+      fsr_adc: { min: 400, max: 600, warning: 550 },
+      fsr_force_N: { min: 5, max: 15, warning: 12 },
+      fsr_pressure_Pa: { min: 95, max: 101, warning: 100 }
+    },
+    lastUpdated: '2023-07-20T11:35:00'
+  },
+  { 
+    id: 9, 
+    name: 'Santhome Bridge', 
+    type: 'Pressure Sensor',
+    location: 'Santhome High Road',
+    status: 'inactive',
+    model: 'SM-PS1700',
+    serialNumber: 'PS1700-64208',
+    installDate: '2023-04-01',
+    lastMaintenance: '2023-05-15',
+    firmware: 'v1.7.8',
+    lat: 13.0336, 
+    lng: 80.2770, 
+    batteryLevel: 5,
+    signalStrength: 12,
+    thresholds: {
+      pitch: { min: 0, max: 1.2, warning: 0.8 },
+      roll: { min: 0, max: 1.2, warning: 0.8 },
+      rms: { min: 0.1, max: 0.9, warning: 0.7 },
+      peak: { min: 0.1, max: 1.0, warning: 0.8 },
+      crest_factor: { min: 1.0, max: 2.0, warning: 1.5 },
+      f_dom: { min: 40, max: 60, warning: 55 },
+      temp: { min: 20, max: 30, warning: 28 },
+      sw18010p: { min: 0.5, max: 1.0, warning: 0.9 },
+      fsr_adc: { min: 400, max: 600, warning: 550 },
+      fsr_force_N: { min: 5, max: 15, warning: 12 },
+      fsr_pressure_Pa: { min: 95, max: 101, warning: 100 }
+    },
+    lastUpdated: '2023-07-19T16:20:00'
+  },
+  { 
+    id: 10, 
+    name: 'IIT Madras Structure', 
+    type: 'Inclination Sensor',
+    location: 'IIT Campus',
+    status: 'active',
+    model: 'SM-IS1200',
+    serialNumber: 'IS1200-53197',
+    installDate: '2023-04-05',
+    lastMaintenance: '2023-07-05',
+    firmware: 'v1.6.3',
+    lat: 12.9941, 
+    lng: 80.2359, 
+    batteryLevel: 91,
+    signalStrength: 96,
+    thresholds: {
+      pitch: { min: 0, max: 1.2, warning: 0.8 },
+      roll: { min: 0, max: 1.2, warning: 0.8 },
+      rms: { min: 0.1, max: 0.9, warning: 0.7 },
+      peak: { min: 0.1, max: 1.0, warning: 0.8 },
+      crest_factor: { min: 1.0, max: 2.0, warning: 1.5 },
+      f_dom: { min: 40, max: 60, warning: 55 },
+      temp: { min: 20, max: 30, warning: 28 },
+      sw18010p: { min: 0.5, max: 1.0, warning: 0.9 },
+      fsr_adc: { min: 400, max: 600, warning: 550 },
+      fsr_force_N: { min: 5, max: 15, warning: 12 },
+      fsr_pressure_Pa: { min: 95, max: 101, warning: 100 }
+    },
+    lastUpdated: '2023-07-20T15:10:00'
+  },
+  { 
+    id: 11, 
+    name: 'Koyambedu Market Tower', 
+    type: 'Vibration Sensor',
+    location: 'Koyambedu Market Complex',
+    status: 'warning',
+    model: 'SM-VS2300',
+    serialNumber: 'VS2300-42086',
+    installDate: '2023-04-10',
+    lastMaintenance: '2023-06-18',
+    firmware: 'v2.0.9',
+    lat: 13.0723, 
+    lng: 80.1942, 
+    batteryLevel: 42,
+    signalStrength: 71,
+    thresholds: {
+      pitch: { min: 0, max: 1.2, warning: 0.8 },
+      roll: { min: 0, max: 1.2, warning: 0.8 },
+      rms: { min: 0.1, max: 0.9, warning: 0.7 },
+      peak: { min: 0.1, max: 1.0, warning: 0.8 },
+      crest_factor: { min: 1.0, max: 2.0, warning: 1.5 },
+      f_dom: { min: 40, max: 60, warning: 55 },
+      temp: { min: 20, max: 30, warning: 28 },
+      sw18010p: { min: 0.5, max: 1.0, warning: 0.9 },
+      fsr_adc: { min: 400, max: 600, warning: 550 },
+      fsr_force_N: { min: 5, max: 15, warning: 12 },
+      fsr_pressure_Pa: { min: 95, max: 101, warning: 100 }
+    },
+    lastUpdated: '2023-07-20T12:40:00'
+  },
+  { 
+    id: 12, 
+    name: 'Mylapore Temple Structure', 
+    type: 'Inclination Sensor',
+    location: 'Mylapore Temple',
+    status: 'active',
+    model: 'SM-IS1300',
+    serialNumber: 'IS1300-31975',
+    installDate: '2023-04-15',
+    lastMaintenance: '2023-07-08',
+    firmware: 'v1.6.3',
+    lat: 13.0369, 
+    lng: 80.2676, 
+    batteryLevel: 83,
+    signalStrength: 88,
+    thresholds: {
+      pitch: { min: 0, max: 1.2, warning: 0.8 },
+      roll: { min: 0, max: 1.2, warning: 0.8 },
+      rms: { min: 0.1, max: 0.9, warning: 0.7 },
+      peak: { min: 0.1, max: 1.0, warning: 0.8 },
+      crest_factor: { min: 1.0, max: 2.0, warning: 1.5 },
+      f_dom: { min: 40, max: 60, warning: 55 },
+      temp: { min: 20, max: 30, warning: 28 },
+      sw18010p: { min: 0.5, max: 1.0, warning: 0.9 },
+      fsr_adc: { min: 400, max: 600, warning: 550 },
+      fsr_force_N: { min: 5, max: 15, warning: 12 },
+      fsr_pressure_Pa: { min: 95, max: 101, warning: 100 }
+    },
+    lastUpdated: '2023-07-20T14:55:00'
+  }
 ];
 
 // API Functions
@@ -356,15 +635,22 @@ onMounted(async () => {
   try {
     isLoading.value = true;
     
+    console.log('🔍 Looking for device with ID:', deviceId.value);
+    console.log('📋 Available device IDs:', mockDevices.map(d => d.id));
+    
     // Find device by ID
     const foundDevice = mockDevices.find(d => d.id === deviceId.value);
     
+    console.log('🎯 Device found:', foundDevice ? foundDevice.name : 'NOT FOUND');
+    
     if (!foundDevice) {
+      console.error('❌ Device not found, redirecting to dashboard');
       router.push('/dashboard');
       return;
     }
     
     device.value = foundDevice;
+    console.log('✅ Device loaded successfully:', device.value.name);
     
     // Load monitoring data from API
     await loadMonitoringData();
@@ -397,7 +683,7 @@ onMounted(async () => {
       }, 5000);
     });
   } catch (error) {
-    console.error('Failed to load device data:', error);
+    console.error('❌ Failed to load device data:', error);
     isLoading.value = false;
   }
 });
